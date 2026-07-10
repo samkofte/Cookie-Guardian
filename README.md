@@ -13,16 +13,31 @@
 - **Persistent Alarm Scheduling:** Automatic cleanups are scheduled using Chrome's persistent alarms, guaranteeing they survive browser idle states and background script suspension.
 - **Base Domain Clearance:** Safely detects the root/registerable domain (e.g., `hbomax.com` from `play.hbomax.com`). When cleaning a site, it clears cookies on all sibling subdomains simultaneously, preventing login persistence through session-sharing trackers.
 - **Integrated Interactive Cookie Editor:** 
-  -collapsible cards to edit cookie values, paths, SameSite, HttpOnly, Secure, Session, and Expirations.
+  - Collapsible cards to edit cookie values, paths, SameSite, HttpOnly, Secure, Session, and Expirations.
   - Search filtering, cookie creation (+), importing from JSON, and exporting to JSON/clipboard.
 - **Bilingual Interface:** Built-in dynamic localization supporting **English** and **Türkçe**. Automatically detects browser language and can be switched dynamically in settings.
 - **Categorized Whitelist Quick-Add:** Includes 61 major platforms (including Kick) with brand favicons categorized for easy Whitelisting.
 - **Advanced Cleansing:** Supports cleaning LocalStorage, IndexedDB databases, and browser Cache alongside cookies.
 
-### Screenshots
-| Options Dashboard (Mint Theme) | Interactive Cookie Editor |
+### Visual Walkthrough & Screenshots
+
+#### Popup Interface
+| Popup Dashboard | Popup Cookie Editor |
 | --- | --- |
-| ![Options Dashboard](screenshots/options_dashboard.png) | ![Cookie Editor](screenshots/cookie_editor.png) |
+| ![Popup Dashboard](screenshots/popup_dashboard.png) | ![Popup Cookie Editor](screenshots/popup_editor.png) |
+
+#### Options Panel Tabs
+| 1. General Settings | 2. Whitelist Manager |
+| --- | --- |
+| ![General Settings](screenshots/options_general.png) | ![Whitelist Manager](screenshots/options_whitelist.png) |
+
+| 3. Greylist Manager | 4. Statistics & Logs |
+| --- | --- |
+| ![Greylist Manager](screenshots/options_greylist.png) | ![Statistics & Logs](screenshots/options_statistics.png) |
+
+| 5. Advanced Settings |
+| --- |
+| ![Advanced Settings](screenshots/options_advanced.png) |
 
 ### Installation (Developer Mode)
 1. Clone this repository locally.
@@ -46,10 +61,25 @@
 - **Kategorize Edilmiş Güvenli Liste:** Kick dahil 61 popüler platform, kendi favicon logolarıyla kategorize edilerek kolayca Güvenli Liste'ye (Whitelist) eklenecek şekilde yerleştirilmiştir.
 - **Gelişmiş Veri Temizliği:** Çerezlerin yanı sıra LocalStorage, IndexedDB veritabanları ve Tarayıcı Önbelleğini de temizleme seçeneği sunar.
 
-### Ekran Görüntüleri
-| Ayarlar Paneli (Mint Teması) | Etkin Çerez Editörü |
+### Görsel Anlatım ve Ekran Görüntüleri
+
+#### Açılır Pencere (Popup) Arayüzü
+| Kalkan Kontrol Paneli | Entegre Çerez Editörü |
 | --- | --- |
-| ![Options Dashboard](screenshots/options_dashboard.png) | ![Cookie Editor](screenshots/cookie_editor.png) |
+| ![Control Panel](screenshots/popup_dashboard.png) | ![Cookie Yöneticisi](screenshots/popup_editor.png) |
+
+#### Ayarlar Kontrol Paneli Sekmeleri
+| 1. Genel Ayarlar | 2. Güvenli Liste (Whitelist) |
+| --- | --- |
+| ![Genel Ayarlar](screenshots/options_general.png) | ![Güvenli Liste](screenshots/options_whitelist.png) |
+
+| 3. Gri Liste (Greylist) | 4. İstatistikler ve Günlükler |
+| --- | --- |
+| ![Gri Liste](screenshots/options_greylist.png) | ![İstatistikler](screenshots/options_statistics.png) |
+
+| 5. Gelişmiş Araçlar |
+| --- |
+| ![Gelişmiş Araçlar](screenshots/options_advanced.png) |
 
 ### Kurulum Kılavuzu
 1. Bu depoyu yerel bilgisayarınıza indirin.
