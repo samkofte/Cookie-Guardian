@@ -1,7 +1,19 @@
 /* options/options.js */
 import { getSettings, saveSettings, resetSettings } from '../js/settings.js';
-import { isDomainMatched, getDomainFromUrl, cleanCookiesForDomain } from '../js/cookieManager.js';
+import { isDomainMatched, getDomainFromUrl, getBaseDomain, cleanCookiesForDomain } from '../js/cookieManager.js';
 import { applyTranslations } from '../js/i18n.js';
+
+function sanitizeDomainInput(inputStr) {
+  let raw = inputStr.trim().toLowerCase();
+  if (!raw) return '';
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    raw = getDomainFromUrl(raw) || raw;
+  } else {
+    if (raw.includes('/')) raw = raw.split('/')[0];
+    if (raw.startsWith('www.')) raw = raw.substring(4);
+  }
+  return getBaseDomain(raw) || raw;
+}
 
 const POPULAR_SITES = [
   // Tech & AI
@@ -433,7 +445,7 @@ function setupListManagers() {
   // Whitelist ADD
   document.getElementById('btn-add-whitelist').addEventListener('click', async () => {
     const input = document.getElementById('whitelist-input');
-    const domain = input.value.trim().toLowerCase();
+    const domain = sanitizeDomainInput(input.value);
     if (domain) {
       // Find if already exists
       const exists = currentSettings.whitelistedDomains.some(item => 
@@ -472,7 +484,7 @@ function setupListManagers() {
   // Greylist ADD
   document.getElementById('btn-add-greylist').addEventListener('click', async () => {
     const input = document.getElementById('greylist-input');
-    const domain = input.value.trim().toLowerCase();
+    const domain = sanitizeDomainInput(input.value);
     if (domain) {
       const exists = currentSettings.greylistedDomains.some(item => 
         (typeof item === 'object' ? item.domain : item) === domain

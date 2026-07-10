@@ -1,6 +1,6 @@
 /* popup/popup.js */
 import { getSettings, saveSettings, checkDailyStatsReset } from '../js/settings.js';
-import { getDomainFromUrl, getCookiesForDomain, cleanCookiesForDomain, isDomainMatched } from '../js/cookieManager.js';
+import { getDomainFromUrl, getBaseDomain, getCookiesForDomain, cleanCookiesForDomain, isDomainMatched } from '../js/cookieManager.js';
 import { applyTranslations } from '../js/i18n.js';
 
 let currentTabDomain = '';
@@ -472,7 +472,9 @@ function setupEventListeners() {
     let whitelist = settings.whitelistedDomains;
     let greylist = settings.greylistedDomains;
     
-    const index = whitelist.findIndex(item => (typeof item === 'object' ? item.domain : item) === currentTabDomain);
+    const baseDomain = getBaseDomain(currentTabDomain) || currentTabDomain;
+    
+    const index = whitelist.findIndex(item => (typeof item === 'object' ? item.domain : item) === baseDomain);
     if (index > -1) {
       whitelist.splice(index, 1);
     } else {
@@ -481,9 +483,9 @@ function setupEventListeners() {
         alert("Free limit of 23 whitelisted sites reached. Please upgrade to PRO to whitelist unlimited sites!");
         return;
       }
-      whitelist.push({ domain: currentTabDomain, addedAt: Date.now() });
+      whitelist.push({ domain: baseDomain, addedAt: Date.now() });
       // Remove from greylist if adding to whitelist
-      const glIndex = greylist.findIndex(item => (typeof item === 'object' ? item.domain : item) === currentTabDomain);
+      const glIndex = greylist.findIndex(item => (typeof item === 'object' ? item.domain : item) === baseDomain);
       if (glIndex > -1) greylist.splice(glIndex, 1);
     }
     
@@ -500,13 +502,15 @@ function setupEventListeners() {
     let whitelist = settings.whitelistedDomains;
     let greylist = settings.greylistedDomains;
     
-    const index = greylist.findIndex(item => (typeof item === 'object' ? item.domain : item) === currentTabDomain);
+    const baseDomain = getBaseDomain(currentTabDomain) || currentTabDomain;
+    
+    const index = greylist.findIndex(item => (typeof item === 'object' ? item.domain : item) === baseDomain);
     if (index > -1) {
       greylist.splice(index, 1);
     } else {
-      greylist.push({ domain: currentTabDomain, addedAt: Date.now() });
+      greylist.push({ domain: baseDomain, addedAt: Date.now() });
       // Remove from whitelist if adding to greylist
-      const wlIndex = whitelist.findIndex(item => (typeof item === 'object' ? item.domain : item) === currentTabDomain);
+      const wlIndex = whitelist.findIndex(item => (typeof item === 'object' ? item.domain : item) === baseDomain);
       if (wlIndex > -1) whitelist.splice(wlIndex, 1);
     }
     
