@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cookie Guardian</title>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-area">
+        <svg class="logo-icon" viewBox="0 0 24 24" width="24" height="24">
+          <path d="M12 2 C16.5 2 20 3.5 20 9 C20 16 15 20 12 22 C9 20 4 16 4 9 C4 3.5 7.5 2 12 2 Z" fill="currentColor"/>
+          <circle cx="9.5" cy="8" r="1" fill="#141b25" opacity="0.4"/>
+          <circle cx="10.5" cy="13" r="1.2" fill="#141b25" opacity="0.4"/>
+          <circle cx="14.5" cy="9.5" r="1.1" fill="#141b25" opacity="0.4"/>
+          <circle cx="14" cy="14.5" r="0.9" fill="#141b25" opacity="0.4"/>
+          <path d="M9 12 L11 14 L15.5 9.5" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="logo-title" data-i18n="title">Cookie Guardian</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="master-toggle" checked>
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <hr class="divider">
+
+    <!-- Status Card -->
+    <div id="status-card" class="status-card active">
+      <div class="status-icon-wrapper">
+        <svg class="status-icon" viewBox="0 0 24 24" width="20" height="20">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="currentColor"/>
+          <path d="M9 11l2 2 4-4" fill="none" stroke="#1f2a37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="status-info">
+        <div class="status-title" id="status-text">Protected</div>
+        <div class="status-sub" id="status-desc" data-i18n="activeTab">Active Tab Status</div>
+      </div>
+    </div>
+
+    <!-- Cookies Cleaned Today Card -->
+    <div class="stats-today-card">
+      <div class="clean-icon-wrapper">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </div>
+      <div class="stats-today-info">
+        <div class="stats-today-number" id="cleaned-today-count">0</div>
+        <div class="stats-today-label" data-i18n="statToday">DELETED TODAY</div>
+      </div>
+    </div>
+
+    <!-- Current Tab Details Card -->
+    <div class="current-site-card">
+      <div class="site-header">
+        <span class="site-name" id="current-domain">loading...</span>
+        <button class="cookie-dropdown-btn" id="cookie-dropdown-trigger">
+          <span id="current-cookie-count">0 cookies</span>
+          <svg class="arrow-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Collapsible Cookie List (Interactive Cookie Editor) -->
+      <div class="cookie-list-collapsible" id="cookie-list-container" style="display: none;">
+        <!-- Search bar -->
+        <div class="editor-search-wrapper" style="margin-bottom: 8px;">
+          <input type="text" id="editor-search-input" placeholder="Search cookies..." data-i18n-placeholder="placeholderSearchCookies" class="editor-search-input" style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--bg-main); color: var(--text-main); font-size: 11px; outline: none; transition: border-color 0.2s;">
+        </div>
+        
+        <!-- Cookie List container -->
+        <div class="cookie-editor-list-wrapper" style="max-height: 220px; overflow-y: auto; margin-bottom: 8px;">
+          <ul class="cookie-editor-list" id="cookie-list-ul" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px;">
+            <!-- Populated dynamically with collapsible item cards -->
+          </ul>
+        </div>
+        
+        <!-- Editor Panels (Add / Import / Export) -->
+        <div id="editor-panel-add" class="editor-panel hidden" style="background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 8px; display: none;">
+          <div class="panel-header" style="font-weight: bold; font-size: 12px; margin-bottom: 6px; color: var(--text-main);" data-i18n="panelAddTitle">Add Cookie</div>
+          <div class="panel-body" style="display: flex; flex-direction: column; gap: 6px;">
+            <input type="text" id="add-cookie-name" placeholder="Name" class="panel-input" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 11px; border-radius: 4px;">
+            <textarea id="add-cookie-value" placeholder="Value" class="panel-textarea" style="width: 100%; height: 50px; padding: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 11px; border-radius: 4px; resize: vertical;"></textarea>
+            <input type="text" id="add-cookie-path" value="/" placeholder="Path" class="panel-input" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 11px; border-radius: 4px;">
+            <div class="panel-row-checkboxes" style="display: flex; gap: 10px; font-size: 10px; color: var(--text-muted);">
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="add-cookie-secure"> Secure</label>
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="add-cookie-httponly"> HttpOnly</label>
+              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;"><input type="checkbox" id="add-cookie-session" checked> Session</label>
+            </div>
+            <div class="panel-row" id="add-cookie-expiry-row" style="display: none;">
+              <input type="datetime-local" id="add-cookie-expiration" class="panel-input" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 11px; border-radius: 4px;">
+            </div>
+            <div class="panel-actions" style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px;">
+              <button id="btn-add-save" class="upgrade-btn" style="padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; height: auto;" data-i18n="btnSave">Save</button>
+              <button id="btn-add-cancel" class="cookie-dropdown-btn" style="padding: 6px 12px; font-size: 11px; border-radius: 4px; height: auto;" data-i18n="btnCancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="editor-panel-import" class="editor-panel hidden" style="background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 8px; display: none;">
+          <div class="panel-header" style="font-weight: bold; font-size: 12px; margin-bottom: 6px; color: var(--text-main);" data-i18n="panelImportTitle">Import Cookies (JSON)</div>
+          <div class="panel-body" style="display: flex; flex-direction: column; gap: 6px;">
+            <textarea id="import-cookie-json" placeholder='[{"name": "...", "value": "..."}]' class="panel-textarea" style="width: 100%; height: 80px; padding: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 10px; border-radius: 4px; resize: vertical; font-family: monospace;"></textarea>
+            <div class="panel-actions" style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px;">
+              <button id="btn-import-save" class="upgrade-btn" style="padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; height: auto;" data-i18n="btnImport">Import</button>
+              <button id="btn-import-cancel" class="cookie-dropdown-btn" style="padding: 6px 12px; font-size: 11px; border-radius: 4px; height: auto;" data-i18n="btnCancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="editor-panel-export" class="editor-panel hidden" style="background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; margin-bottom: 8px; display: none;">
+          <div class="panel-header" style="font-weight: bold; font-size: 12px; margin-bottom: 6px; color: var(--text-main);" data-i18n="panelExportTitle">Export Cookies (JSON)</div>
+          <div class="panel-body" style="display: flex; flex-direction: column; gap: 6px;">
+            <textarea id="export-cookie-json" readonly class="panel-textarea" style="width: 100%; height: 80px; padding: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 10px; border-radius: 4px; resize: vertical; font-family: monospace;"></textarea>
+            <div class="panel-actions" style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px;">
+              <button id="btn-export-copy" class="upgrade-btn" style="padding: 6px 12px; font-size: 11px; font-weight: bold; border-radius: 4px; height: auto;" data-i18n="btnCopy">Copy</button>
+              <button id="btn-export-close" class="cookie-dropdown-btn" style="padding: 6px 12px; font-size: 11px; border-radius: 4px; height: auto;" data-i18n="btnClose">Close</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="cookie-editor-toolbar" style="display: flex; gap: 8px; justify-content: center; border-top: 1px solid var(--border-color); padding-top: 8px; margin-top: 8px;">
+          <button id="btn-editor-add" class="cookie-dropdown-btn" style="padding: 6px; border-radius: 6px;" title="Add Cookie">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+          <button id="btn-editor-delete-all" class="cookie-dropdown-btn" style="padding: 6px; border-radius: 6px; color: var(--color-danger);" title="Delete All Cookies">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+          <button id="btn-editor-import" class="cookie-dropdown-btn" style="padding: 6px; border-radius: 6px;" title="Import Cookies">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M19 12l-7 7-7-7"/>
+            </svg>
+          </button>
+          <button id="btn-editor-export" class="cookie-dropdown-btn" style="padding: 6px; border-radius: 6px;" title="Export Cookies">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 19V5M5 12l7-7 7 7"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button id="btn-whitelist" class="btn btn-outline-success">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span data-i18n="btnWhitelist">Whitelist Site</span>
+        </button>
+        <button id="btn-greylist" class="btn btn-outline-grey">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span data-i18n="btnGreylist">Greylist Site</span>
+        </button>
+        <button id="btn-clean" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+          <span data-i18n="btnClean">Clean Non-Whitelisted</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Lifetime Stats -->
+    <div class="lifetime-stats-container">
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-number" id="total-deleted-count">0</div>
+          <div class="stat-label" data-i18n="statTotal">TOTAL DELETED</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number" id="whitelisted-count">0</div>
+          <div class="stat-label" data-i18n="sidebarWhitelist">WHITELISTED</div>
+        </div>
+      </div>
+      <div class="stats-actions">
+        <span class="clear-all-btn" id="btn-clear-stats" data-i18n="btnLogClear">Clear all</span>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Footer -->
+    <footer class="footer">
+      <button class="footer-icon-btn" id="btn-settings" title="Settings">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+      
+      <button class="upgrade-btn" id="btn-upgrade">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+        </svg>
+        <span id="upgrade-btn-text">11/23 Upgrade</span>
+      </button>
+      
+      <span class="restore-link" id="btn-restore" data-i18n="btnLogClear">Clear all</span>
+    </footer>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

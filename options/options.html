@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="title">Cookie Guardian - Options</title>
+  <link rel="stylesheet" href="../css/theme.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="dashboard-container">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <svg class="logo-icon-spin" viewBox="0 0 24 24" width="28" height="28">
+          <path d="M12 2 C16.5 2 20 3.5 20 9 C20 16 15 20 12 22 C9 20 4 16 4 9 C4 3.5 7.5 2 12 2 Z" fill="currentColor"/>
+          <circle cx="9.5" cy="8" r="1" fill="#141b25" opacity="0.4"/>
+          <circle cx="10.5" cy="13" r="1.2" fill="#141b25" opacity="0.4"/>
+          <circle cx="14.5" cy="9.5" r="1.1" fill="#141b25" opacity="0.4"/>
+          <circle cx="14" cy="14.5" r="0.9" fill="#141b25" opacity="0.4"/>
+          <path d="M9 12 L11 14 L15.5 9.5" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="brand-text-flex">
+          <span class="brand-name" data-i18n="title">Cookie Guardian</span>
+          <span class="brand-version">v2.0.2</span>
+        </div>
+      </div>
+      <nav class="sidebar-menu">
+        <button class="tab-btn active" data-tab="general">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9"></rect>
+            <rect x="14" y="3" width="7" height="5"></rect>
+            <rect x="14" y="12" width="7" height="9"></rect>
+            <rect x="3" y="16" width="7" height="5"></rect>
+          </svg>
+          <span data-i18n="sidebarGeneral">General</span>
+        </button>
+        <button class="tab-btn" data-tab="whitelist">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M9 11l2 2 4-4"></path>
+          </svg>
+          <span data-i18n="sidebarWhitelist">Whitelist</span>
+        </button>
+        <button class="tab-btn" data-tab="greylist">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span data-i18n="sidebarGreylist">Greylist</span>
+        </button>
+        <button class="tab-btn" data-tab="statistics">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          <span data-i18n="sidebarStatistics">Statistics</span>
+        </button>
+        <button class="tab-btn" data-tab="advanced">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span data-i18n="sidebarAdvanced">Advanced</span>
+        </button>
+      </nav>
+    </aside>
+
+    <main class="options-main">
+      
+      <!-- ================= GENERAL TAB ================= -->
+      <section id="tab-general" class="tab-content active">
+        <!-- Appearance Card -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="cardAppearance">Appearance</h2>
+          
+          <div class="settings-row">
+            <div class="row-info">
+              <label for="setting-theme" class="row-label" data-i18n="labelTheme">Theme</label>
+              <div class="row-desc" data-i18n="descTheme">Choose your preferred color scheme</div>
+            </div>
+            <div class="row-control">
+              <select id="setting-theme" class="custom-select">
+                <option value="Dark">Dark</option>
+                <option value="Light">Light</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="row-info">
+              <label for="setting-language" class="row-label" data-i18n="labelLanguage">Language</label>
+              <div class="row-desc" data-i18n="descLanguage">Select UI language</div>
+            </div>
+            <div class="row-control">
+              <select id="setting-language" class="custom-select">
+                <option value="en">English (EN)</option>
+                <option value="tr">Türkçe (TR)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Automatic Cleanup Card -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="cardCleanupRules">Cleanup Rules</h2>
+          
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelDeleteClose">Delete on Tab Close</label>
+              <div class="row-desc" data-i18n="descDeleteClose">Automatically delete domain cookies when its last tab is closed</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-delete-tab-close">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelDeleteStartup">Delete on Browser Startup</label>
+              <div class="row-desc" data-i18n="descDeleteStartup">Clear all non-whitelisted cookies when starting the browser</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-delete-startup">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelDeleteNav">Delete on Navigation Away</label>
+              <div class="row-desc" data-i18n="descDeleteNav">Delete cookies of the previous site immediately when you navigate away</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-delete-nav-away">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="row-info">
+              <label for="setting-clean-delay" class="row-label" data-i18n="labelCleanDelay">Clean delay (seconds)</label>
+              <div class="row-desc" data-i18n="descCleanDelay">Wait before deleting, in case you reopen the tab</div>
+            </div>
+            <div class="row-control">
+              <input type="number" id="setting-clean-delay" class="custom-input-number" min="0" max="600">
+            </div>
+          </div>
+        </div>
+
+        <!-- Cookie Types Card -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="cardCookieTypes">Cookie Types</h2>
+          
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelKeepSession">Keep Session Cookies</label>
+              <div class="row-desc" data-i18n="descKeepSession">Do not delete temporary session cookies</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-keep-session">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelShowCounter">Show Badge Counter</label>
+              <div class="row-desc" data-i18n="descShowCounter">Display cookie count on the extension icon</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-show-counter">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelNotifications">Show Notifications</label>
+              <div class="row-desc" data-i18n="descNotifications">Show system notification after cleaning cookies</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-show-notifications">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cookie Aging Card -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="labelCookieAging">Enable Cookie Aging</h2>
+          <div class="card-intro" data-i18n="descCookieAging">Automatically delete cookies older than a specific duration</div>
+          
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelCookieAging">Enable Cookie Aging</label>
+              <div class="row-desc" data-i18n="descCookieAging">Automatically delete cookies older than a specific duration</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-enable-aging">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row" id="row-max-age" style="display: none;">
+            <div class="row-info">
+              <label for="setting-max-age" class="row-label" data-i18n="labelMaxAge">Max Cookie Age (Hours)</label>
+              <div class="row-desc" data-i18n="descMaxAge">Maximum age allowed for non-protected cookies</div>
+            </div>
+            <div class="row-control">
+              <input type="number" id="setting-max-age" class="custom-input-number" min="1" max="8760">
+            </div>
+          </div>
+        </div>
+
+        <!-- Scheduled Cleanup Card -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="labelScheduledCleanup">Scheduled Cleanup</h2>
+          <div class="card-intro" data-i18n="descScheduledCleanup">Periodically run a background cleanup loop</div>
+          
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelScheduledCleanup">Scheduled Cleanup</label>
+              <div class="row-desc" data-i18n="descScheduledCleanup">Periodically run a background cleanup loop</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-enable-schedule">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row" id="row-schedule-interval" style="display: none;">
+            <div class="row-info">
+              <label for="setting-schedule-interval" class="row-label" data-i18n="labelScheduleInterval">Cleanup Interval</label>
+              <div class="row-desc" data-i18n="descScheduleInterval">How often to run the background cleaning process</div>
+            </div>
+            <div class="row-control">
+              <select id="setting-schedule-interval" class="custom-select">
+                <option value="15m">Every 15 minutes</option>
+                <option value="1h">Every hour</option>
+                <option value="3h">Every 3 hours</option>
+                <option value="6h">Every 6 hours</option>
+                <option value="12h">Every 12 hours</option>
+                <option value="24h">Every 24 hours</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= WHITELIST TAB ================= -->
+      <section id="tab-whitelist" class="tab-content">
+        <div class="settings-card">
+          <div class="card-title-flex-between">
+            <h2 class="card-title-no-border" data-i18n="titleWhitelist">Whitelisted Sites</h2>
+            <span id="whitelist-limit-badge" class="limit-badge">0/23</span>
+          </div>
+          
+          <div class="list-manager">
+            <div class="list-inputs-row">
+              <input type="text" id="whitelist-input" placeholder="example.com" data-i18n-placeholder="placeholderWhitelist" class="custom-input-text">
+              <button id="btn-add-whitelist" class="btn-action-add" data-i18n="btnAdd">Add</button>
+            </div>
+            
+            <div class="domains-list-wrapper-scrollable">
+              <ul id="whitelist-ul" class="domains-list-premium">
+                <!-- Dynamically generated -->
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Add Popular Sites Card -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="titleQuickAdd">Quick Add Popular Sites</h2>
+          <div class="card-intro" data-i18n="introQuickAdd">Click to whitelist sites you use frequently:</div>
+          
+          <div class="quick-add-categories-wrapper" id="quick-add-categories-container">
+            <!-- Dynamically generated categories and grids -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= GREYLIST TAB ================= -->
+      <section id="tab-greylist" class="tab-content">
+        <!-- Temporary Protection -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="titleGreylist">Temporary Protection</h2>
+          <div class="card-intro" data-i18n="introGreylist">Greylist sites are temporarily protected...</div>
+          
+          <div class="list-manager">
+            <div class="list-inputs-row">
+              <input type="text" id="greylist-input" placeholder="example.com" data-i18n-placeholder="placeholderGreylist" class="custom-input-text">
+              <button id="btn-add-greylist" class="btn-action-add" data-i18n="btnAdd">Add</button>
+            </div>
+            
+            <div class="domains-list-wrapper-scrollable">
+              <ul id="greylist-ul" class="domains-list-premium">
+                <!-- Dynamically generated -->
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Greylist Expiry Settings -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="cardGreylistSettings">Greylist Settings</h2>
+          
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelAutoExpire">Auto-Expire Greylist</label>
+              <div class="row-desc" data-i18n="descAutoExpire">Automatically remove sites from greylist after inactivity</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-auto-expire-greylist">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row" id="row-greylist-expire-days">
+            <div class="row-info">
+              <label for="setting-greylist-expire-days" class="row-label" data-i18n="labelExpireDays">Inactivity Limit (Days)</label>
+              <div class="row-desc" data-i18n="descExpireDays">Days of inactivity before removing from greylist</div>
+            </div>
+            <div class="row-control">
+              <input type="number" id="setting-greylist-expire-days" class="custom-input-number" min="1" max="90">
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode Comparison -->
+        <div class="settings-card">
+          <h3 class="comparison-title" data-i18n="titleFeatureCompare">Protection Mode Comparison</h3>
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th class="col-feature" data-i18n="colFeature">Feature</th>
+                <th class="col-whitelist" data-i18n="colWhitelist">Whitelist</th>
+                <th class="col-greylist" data-i18n="colGreylist">Greylist</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="td-feature" data-i18n="rowPermProtect">Permanent Protection</td>
+                <td class="td-whitelist success" data-i18n="rowYes">Yes</td>
+                <td class="td-greylist warning" data-i18n="rowNo">No</td>
+              </tr>
+              <tr>
+                <td class="td-feature" data-i18n="rowSessionCleanup">Clean on Tab Close</td>
+                <td class="td-whitelist success" data-i18n="rowNo">No</td>
+                <td class="td-greylist warning" data-i18n="rowYes">Yes</td>
+              </tr>
+              <tr>
+                <td class="td-feature" data-i18n="rowInactivityClean">Inactivity Auto-Expiry</td>
+                <td class="td-whitelist success" data-i18n="rowNo">No</td>
+                <td class="td-greylist warning" data-i18n="rowYes">Yes</td>
+              </tr>
+              <tr>
+                <td class="td-feature" data-i18n="rowQuickAdd">Popular Quick-Add Support</td>
+                <td class="td-whitelist success" data-i18n="rowYes">Yes</td>
+                <td class="td-greylist warning" data-i18n="rowNo">No</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= STATISTICS TAB ================= -->
+      <section id="tab-statistics" class="tab-content">
+        <!-- Overview Card -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="titleOverview">Overview</h2>
+          <div class="stats-grid">
+            <div class="stats-metric-box">
+              <div class="metric-num" id="stats-total-deleted">0</div>
+              <div class="metric-title" data-i18n="statTotal">TOTAL COOKIES DELETED</div>
+            </div>
+            <div class="stats-metric-box">
+              <div class="metric-num" id="stats-cleaned-today">0</div>
+              <div class="metric-title" data-i18n="statToday">DELETED TODAY</div>
+            </div>
+            <div class="stats-metric-box">
+              <div class="metric-num" id="stats-daily-average">0</div>
+              <div class="metric-title" data-i18n="statAverage">DAILY AVERAGE</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weekly Chart -->
+        <div class="settings-card">
+          <h3 class="chart-section-title" data-i18n="titleLast7Days">Last 7 Days Deletions</h3>
+          <div class="chart-wrapper">
+            <div class="chart-y-axis">
+              <span id="chart-y-max">100</span>
+              <span id="chart-y-mid">50</span>
+              <span>0</span>
+            </div>
+            <div class="chart-container" id="weekly-chart-container">
+              <!-- Dynamically populated chart bars -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Deletion Log Card -->
+        <div class="settings-card">
+          <div class="card-title-flex-between">
+            <h2 class="card-title-no-border" data-i18n="titleLog">Detailed Deletion Log</h2>
+            <button id="btn-clear-log" class="btn-clear-action" data-i18n="btnLogClear">Clear Log</button>
+          </div>
+          <div class="log-list-wrapper-scrollable">
+            <ul id="deletion-log-ul" class="log-list-premium">
+              <!-- Dynamically generated logs -->
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ADVANCED TAB ================= -->
+      <section id="tab-advanced" class="tab-content">
+        <!-- Advanced Cleansing Card -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="titleAdvanced">Advanced Storage Cleansing</h2>
+          <div class="card-intro" data-i18n="introAdvanced">In addition to cookies, clean other client-side storage...</div>
+          
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelCleanLocal">Clean localStorage</label>
+              <div class="row-desc" data-i18n="descCleanLocal">Remove localStorage data for non-whitelisted sites</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-clean-localstorage">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelCleanIndexed">Clean IndexedDB</label>
+              <div class="row-desc" data-i18n="descCleanIndexed">Remove IndexedDB databases for non-whitelisted sites</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-clean-indexeddb">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelCleanCache">Clean cache</label>
+              <div class="row-desc" data-i18n="descCleanCache">Clear browser cache files during cleanups</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-clean-cache">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Management Card -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="cardDataManagement">Data Management</h2>
+          <div class="settings-row-buttons" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+            <button id="btn-export-settings" class="btn-clear-action" data-i18n="btnExportSettings" style="padding: 8px 16px;">Export Settings</button>
+            <button id="btn-import-settings" class="btn-clear-action" data-i18n="btnImportSettings" style="padding: 8px 16px;">Import Settings</button>
+            <input type="file" id="file-import-input" style="display: none;" accept=".json">
+            <button id="btn-reset-stats-opt" class="btn-clear-action" data-i18n="btnResetStats" style="padding: 8px 16px; border-color: rgba(239, 68, 68, 0.3); color: var(--color-danger);">Reset Statistics</button>
+            <button id="btn-reset-defaults" class="btn-clear-action" data-i18n="btnResetDefaults" style="padding: 8px 16px; border-color: rgba(239, 68, 68, 0.3); color: var(--color-danger);">Reset to Defaults</button>
+          </div>
+        </div>
+
+        <!-- License Management Card -->
+        <div class="settings-card">
+          <h2 class="card-title" data-i18n="cardLicense">License Management</h2>
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label">PRO Activation</label>
+              <div class="row-desc">Unlock advanced storage cleanups and lift the Whitelist limit of 23 sites.</div>
+            </div>
+            <div class="row-control">
+              <button id="btn-unlock-premium" class="upgrade-btn" data-i18n="btnActivatePro" style="padding: 8px 16px; font-size: 12px; margin: 0; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; height: auto;">Activate PRO (Free)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- About Card -->
+        <div class="settings-card about-section">
+          <h2 class="card-title" data-i18n="titleAbout">About Cookie Guardian</h2>
+          <div class="about-logo-row">
+            <img src="../icons/icon128.png" alt="Logo" class="about-logo">
+            <div class="about-meta">
+              <span class="about-app-name" data-i18n="title">Cookie Guardian</span>
+              <span class="about-info-row">
+                <span class="about-info-label" data-i18n="textVersion">Version</span>
+                <span class="about-info-val">2.0.2</span>
+              </span>
+              <span class="about-info-row">
+                <span class="about-info-val" data-i18n="textRelease">Channel: Stable Pack</span>
+              </span>
+              <span class="about-info-row">
+                <span class="about-info-val" data-i18n="textDeveloper">Created by: DeepMind Team</span>
+              </span>
+            </div>
+          </div>
+          <p class="about-app-desc" data-i18n="descAbout">Cookie Guardian is a premium privacy extension...</p>
+          <div class="about-links">
+            <a href="https://github.com" target="_blank" class="about-link-item">GitHub Repository</a>
+            <span class="about-separator">|</span>
+            <a href="https://chrome.google.com/webstore" target="_blank" class="about-link-item">Web Store Page</a>
+            <span class="about-separator">|</span>
+            <a href="#" class="about-link-item">Documentation</a>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Premium Upgrade Fullscreen Screen Blocker / Simulation overlay -->
+  <div id="premium-lock-overlay" class="premium-lock-overlay hidden">
+    <div class="premium-modal">
+      <svg class="premium-lock-icon" viewBox="0 0 24 24" width="48" height="48">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" fill="none" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      <h2 class="premium-modal-title">Upgrade to PRO</h2>
+      <p class="premium-modal-desc">Unlock advanced storage cleansing features (LocalStorage, IndexedDB, Cache) and lift the Whitelist limit of 23 sites.</p>
+      
+      <div class="premium-price-box">
+        <span class="price-val">$4.99</span>
+        <span class="price-period">/ lifetime</span>
+      </div>
+      
+      <button id="btn-purchase-pro" class="btn-premium-purchase">Upgrade Now</button>
+      <button id="btn-close-premium" class="btn-premium-cancel">Close</button>
+    </div>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>
