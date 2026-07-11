@@ -39,10 +39,18 @@ export function getBaseDomain(domain) {
 // Check if a domain matches any patterns in a list (includes subdomains)
 export function isDomainMatched(domain, list) {
   if (!domain || !list || !Array.isArray(list)) return false;
-  domain = domain.toLowerCase();
+  domain = domain.toLowerCase().trim();
   
   return list.some(item => {
-    const pattern = (typeof item === 'object' ? item.domain : item).toLowerCase();
+    if (!item) return false;
+    let pattern = '';
+    if (typeof item === 'object') {
+      pattern = item.domain || '';
+    } else {
+      pattern = item || '';
+    }
+    pattern = pattern.toLowerCase().trim();
+    if (!pattern) return false;
     return domain === pattern || domain.endsWith('.' + pattern);
   });
 }

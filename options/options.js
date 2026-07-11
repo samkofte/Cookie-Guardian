@@ -447,6 +447,11 @@ function setupListManagers() {
     const input = document.getElementById('whitelist-input');
     const domain = sanitizeDomainInput(input.value);
     if (domain) {
+      const latestSettings = await getSettings();
+      currentSettings.whitelistedDomains = latestSettings.whitelistedDomains;
+      currentSettings.greylistedDomains = latestSettings.greylistedDomains;
+      currentSettings.isPremium = latestSettings.isPremium;
+
       // Find if already exists
       const exists = currentSettings.whitelistedDomains.some(item => 
         (typeof item === 'object' ? item.domain : item) === domain
@@ -486,6 +491,10 @@ function setupListManagers() {
     const input = document.getElementById('greylist-input');
     const domain = sanitizeDomainInput(input.value);
     if (domain) {
+      const latestSettings = await getSettings();
+      currentSettings.whitelistedDomains = latestSettings.whitelistedDomains;
+      currentSettings.greylistedDomains = latestSettings.greylistedDomains;
+
       const exists = currentSettings.greylistedDomains.some(item => 
         (typeof item === 'object' ? item.domain : item) === domain
       );
@@ -684,6 +693,11 @@ function renderPopularSites() {
       button.appendChild(iconSpan);
       
       button.addEventListener('click', async () => {
+        const latestSettings = await getSettings();
+        currentSettings.whitelistedDomains = latestSettings.whitelistedDomains;
+        currentSettings.greylistedDomains = latestSettings.greylistedDomains;
+        currentSettings.isPremium = latestSettings.isPremium;
+
         let whitelist = currentSettings.whitelistedDomains;
         let greylist = currentSettings.greylistedDomains;
         
@@ -789,6 +803,9 @@ async function cleanupDomainIfTabsClosed(domain) {
 
 // Remove from Whitelist callback
 async function removeWhitelistDomain(domain) {
+  const latestSettings = await getSettings();
+  currentSettings.whitelistedDomains = latestSettings.whitelistedDomains;
+
   const index = currentSettings.whitelistedDomains.findIndex(item => 
     (typeof item === 'object' ? item.domain : item) === domain
   );
@@ -806,6 +823,9 @@ async function removeWhitelistDomain(domain) {
 
 // Remove from Greylist callback
 async function removeGreylistDomain(domain) {
+  const latestSettings = await getSettings();
+  currentSettings.greylistedDomains = latestSettings.greylistedDomains;
+
   const index = currentSettings.greylistedDomains.findIndex(item => 
     (typeof item === 'object' ? item.domain : item) === domain
   );
@@ -974,3 +994,16 @@ function setupDynamicVisibilityToggles() {
     toggleSectionVisibility('row-greylist-expire', e.target.checked);
   });
 }
+
+// Listen to storage changes to update lists dynamically (real-time sync with popup)
+chrome.storage.onChanged.addListener(async (changes, areaName) => {
+  if (areaName === 'local') {
+    currentSettings = await getSettings();
+    renderWhitelistPremium(currentSettings.whitelistedDomains);
+    renderList('greylist-ul', currentSettings.greylistedDomains, removeGreylistDomain);
+    renderPopularSites();
+    updateWhitelistLimitBadge();
+    updateWhitelistedStatsCount(currentSettings.whitelistedDomains.length);
+    togglePremiumOverlay(currentSettings.isPremium);
+  }
+});

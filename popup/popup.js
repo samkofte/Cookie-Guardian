@@ -1,6 +1,6 @@
 /* popup/popup.js */
 import { getSettings, saveSettings, checkDailyStatsReset } from '../js/settings.js';
-import { getDomainFromUrl, getBaseDomain, getCookiesForDomain, cleanCookiesForDomain, isDomainMatched } from '../js/cookieManager.js';
+import { getDomainFromUrl, getBaseDomain, getCookiesForDomain, cleanCookiesForDomain, isDomainMatched, cleanAllCookies } from '../js/cookieManager.js';
 import { applyTranslations } from '../js/i18n.js';
 
 let currentTabDomain = '';
@@ -522,8 +522,7 @@ function setupEventListeners() {
   
   // Manual Clean Button for site
   document.getElementById('btn-clean').addEventListener('click', async () => {
-    if (!currentTabDomain) return;
-    const cleaned = await cleanCookiesForDomain(currentTabDomain, true); // Manual clean overrides whitelist
+    const cleaned = await cleanAllCookies(false);
     await refreshCookieList();
     
     // Refresh stats
