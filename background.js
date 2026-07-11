@@ -1,5 +1,5 @@
 /* background.js */
-import { DEFAULT_SETTINGS, getSettings, saveSettings, incrementDeletedCount } from './js/settings.js';
+import { DEFAULT_SETTINGS, getSettings, saveSettings, incrementDeletedCount, incrementTrackersBlocked } from './js/settings.js';
 import { getDomainFromUrl, getBaseDomain, isDomainMatched, cleanCookiesForDomain, cleanAllCookies, cleanBrowsingData } from './js/cookieManager.js';
 
 // Keep track of active tab URLs in memory to detect navigation away and closed tab domains
@@ -105,6 +105,7 @@ chrome.tabs.onActivated.addListener(() => {
 // Update badge when storage/settings are updated
 chrome.storage.onChanged.addListener(() => {
   updateBadgeForActiveTab();
+  updateDNRRules();
 });
 
 // Check if a domain has other open tabs (optionally ignoring a specific tab ID)
@@ -395,3 +396,72 @@ function cookieSecurePlaceholderCheck(domain) {
   // Default to secure since most sites are https
   return true;
 }
+
+// Update Declarative Net Request rules based on settings
+async function updateDNRRules() {
+  try {
+    const settings = await getSettings();
+    if (settings.enabled && settings.blockThirdPartyCookies && settings.isPremium) {
+      chrome.declarativeNetRequest.updateDynamicRules({
+        addRules: [
+          {
+            id: 1,
+            priority: 1,
+            action: {
+              type: "modifyHeaders",
+              requestHeaders: [
+                { header: "Cookie", operation: "remove" }
+              ],
+              responseHeaders: [
+                { header: "Set-Cookie", operation: "remove" }
+              ]
+            },
+            condition: {
+              domainType: "thirdParty",
+              resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "object", "xmlhttprequest", "ping", "csp_report", "media", "websocket", "other"]
+            }
+          }
+        ],
+        removeRuleIds: [1]
+      });
+    } else {
+      chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [1]
+      });
+    }
+  } catch (e) {
+    console.error("Error updating DNR rules:", e);
+  }
+}
+
+// Initialize DNR rules on script load
+updateDNRRules();
+
+// Observe web requests to detect and increment blocked tracker counts
+chrome.webRequest.onHeadersReceived.addListener(
+  async (details) => {
+    try {
+      const settings = await getSettings();
+      if (settings.enabled && settings.blockThirdPartyCookies && settings.isPremium) {
+        if (details.initiator && details.url) {
+          const initDom = getDomainFromUrl(details.initiator);
+          const reqDom = getDomainFromUrl(details.url);
+          if (initDom && reqDom) {
+            const initBase = getBaseDomain(initDom);
+            const reqBase = getBaseDomain(reqDom);
+            if (initBase && reqBase && initBase !== reqBase) {
+              const hasSetCookie = details.responseHeaders && details.responseHeaders.some(h => h.name.toLowerCase() === 'set-cookie');
+              if (hasSetCookie) {
+                await incrementTrackersBlocked(1);
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error counting blocked trackers:", err);
+    }
+  },
+  { urls: ["<all_urls>"] },
+  ["responseHeaders"]
+);

@@ -6,6 +6,9 @@ import { applyTranslations } from '../js/i18n.js';
 function sanitizeDomainInput(inputStr) {
   let raw = inputStr.trim().toLowerCase();
   if (!raw) return '';
+  if (raw.includes('*') || raw.includes('^') || raw.includes('$') || raw.includes('|') || raw.startsWith('/')) {
+    return raw;
+  }
   if (raw.startsWith('http://') || raw.startsWith('https://')) {
     raw = getDomainFromUrl(raw) || raw;
   } else {
@@ -143,6 +146,7 @@ async function loadAndBindSettings() {
   bindCheckbox('setting-clean-localstorage', 'cleanLocalStorage');
   bindCheckbox('setting-clean-indexeddb', 'cleanIndexedDB');
   bindCheckbox('setting-clean-cache', 'cleanCache');
+  bindCheckbox('setting-block-thirdparty', 'blockThirdPartyCookies');
 
   bindSelect('setting-theme', 'theme', (val) => {
     applyTheme(val);
@@ -168,12 +172,19 @@ async function loadAndBindSettings() {
   const statsCleanedToday = document.getElementById('stats-cleaned-today');
   if (statsCleanedToday) statsCleanedToday.textContent = currentSettings.stats.cleanedToday;
   
-  const installDate = currentSettings.installDate || Date.now();
-  const daysActive = Math.max(1, Math.floor((Date.now() - installDate) / (24 * 60 * 60 * 1000)));
-  const dailyAverage = Math.round(currentSettings.stats.totalDeleted / daysActive);
+  const trackersBlockedVal = currentSettings.stats.trackersBlocked || 0;
+  const statsTrackersBlocked = document.getElementById('stats-trackers-blocked');
+  if (statsTrackersBlocked) statsTrackersBlocked.textContent = trackersBlockedVal;
   
-  const statsDailyAverage = document.getElementById('stats-daily-average');
-  if (statsDailyAverage) statsDailyAverage.textContent = dailyAverage;
+  const bandwidthSavedVal = trackersBlockedVal * 12; // 12KB per blocked request
+  const statsBandwidthSaved = document.getElementById('stats-bandwidth-saved');
+  if (statsBandwidthSaved) {
+    if (bandwidthSavedVal >= 1024) {
+      statsBandwidthSaved.textContent = (bandwidthSavedVal / 1024).toFixed(1) + ' MB';
+    } else {
+      statsBandwidthSaved.textContent = bandwidthSavedVal + ' KB';
+    }
+  }
 
   // Protection Info
   const protectedSince = document.getElementById('stats-protected-since');
@@ -439,7 +450,7 @@ function updateWhitelistedStatsCount(count) {
 function setupListManagers() {
   // Render current lists
   renderWhitelistPremium(currentSettings.whitelistedDomains);
-  renderList('greylist-ul', currentSettings.greylistedDomains, removeGreylistDomain);
+  renderGreylistList(currentSettings.greylistedDomains);
   renderPopularSites();
 
   // Whitelist ADD
@@ -472,7 +483,7 @@ function setupListManagers() {
         );
         if (glIndex > -1) {
           currentSettings.greylistedDomains.splice(glIndex, 1);
-          renderList('greylist-ul', currentSettings.greylistedDomains, removeGreylistDomain);
+          renderGreylistList(currentSettings.greylistedDomains);
           await saveSettings({ greylistedDomains: currentSettings.greylistedDomains });
         }
         
@@ -516,7 +527,7 @@ function setupListManagers() {
         }
         
         await saveSettings({ greylistedDomains: currentSettings.greylistedDomains });
-        renderList('greylist-ul', currentSettings.greylistedDomains, removeGreylistDomain);
+        renderGreylistList(currentSettings.greylistedDomains);
         input.value = '';
       }
     }
@@ -540,7 +551,7 @@ function renderList(ulId, domainsArray, deleteCallback) {
     li.style.border = 'none';
     li.style.background = 'none';
     li.style.justifyContent = 'center';
-    li.textContent = 'No greylisted sites yet';
+    li.textContent = 'No domains yet';
     ul.appendChild(li);
     return;
   }
@@ -566,6 +577,101 @@ function renderList(ulId, domainsArray, deleteCallback) {
     
     li.appendChild(span);
     li.appendChild(removeBtn);
+    ul.appendChild(li);
+  });
+}
+
+function renderGreylistList(domainsArray) {
+  const ul = document.getElementById('greylist-ul');
+  if (!ul) return;
+  ul.innerHTML = '';
+  
+  const isTr = (currentSettings.language === 'tr');
+  if (domainsArray.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'no-domains';
+    li.style.border = 'none';
+    li.style.background = 'none';
+    li.style.justifyContent = 'center';
+    li.textContent = isTr ? 'Henüz geçici listede site yok' : 'No greylisted sites yet';
+    ul.appendChild(li);
+    return;
+  }
+  
+  domainsArray.forEach(item => {
+    const domain = typeof item === 'object' ? item.domain : item;
+    const li = document.createElement('li');
+    
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'domain-info';
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'domain-name';
+    nameSpan.textContent = domain;
+    infoDiv.appendChild(nameSpan);
+    
+    const controlWrapper = document.createElement('div');
+    controlWrapper.style.display = 'flex';
+    controlWrapper.style.alignItems = 'center';
+    
+    // Select dropdown for custom aging duration
+    const select = document.createElement('select');
+    select.className = 'custom-select';
+    select.style.padding = '4px 8px';
+    select.style.fontSize = '11px';
+    select.style.minWidth = 'auto';
+    select.style.marginRight = '8px';
+    select.style.height = 'auto';
+    
+    const options = [
+      { text: isTr ? 'Varsayılan' : 'Default', value: '' },
+      { text: isTr ? '1 Saat' : '1 Hour', value: '1h' },
+      { text: isTr ? '12 Saat' : '12 Hours', value: '12h' },
+      { text: isTr ? '1 Gün' : '1 Day', value: '1d' },
+      { text: isTr ? '3 Gün' : '3 Days', value: '3d' },
+      { text: isTr ? '7 Gün' : '7 Days', value: '7d' }
+    ];
+    
+    options.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt.value;
+      o.textContent = opt.text;
+      if (typeof item === 'object' && item.customAge === opt.value) {
+        o.selected = true;
+      }
+      select.appendChild(o);
+    });
+    
+    select.addEventListener('change', async (e) => {
+      const val = e.target.value;
+      const latestSettings = await getSettings();
+      let gl = latestSettings.greylistedDomains;
+      const idx = gl.findIndex(i => (typeof i === 'object' ? i.domain : i) === domain);
+      if (idx > -1) {
+        if (typeof gl[idx] === 'string') {
+          gl[idx] = { domain: domain, addedAt: Date.now() };
+        }
+        gl[idx].customAge = val;
+        await saveSettings({ greylistedDomains: gl });
+      }
+    });
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-remove-premium';
+    removeBtn.title = 'Remove';
+    removeBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    `;
+    removeBtn.addEventListener('click', () => removeGreylistDomain(domain));
+    
+    controlWrapper.appendChild(select);
+    controlWrapper.appendChild(removeBtn);
+    
+    li.appendChild(infoDiv);
+    li.appendChild(controlWrapper);
     ul.appendChild(li);
   });
 }
@@ -720,7 +826,7 @@ function renderPopularSites() {
           const glIndex = greylist.findIndex(item => (typeof item === 'object' ? item.domain : item) === site.domain);
           if (glIndex > -1) {
             greylist.splice(glIndex, 1);
-            renderList('greylist-ul', greylist, removeGreylistDomain);
+            renderGreylistList(greylist);
             await saveSettings({ greylistedDomains: greylist });
           }
         }
@@ -833,7 +939,7 @@ async function removeGreylistDomain(domain) {
   if (index > -1) {
     currentSettings.greylistedDomains.splice(index, 1);
     await saveSettings({ greylistedDomains: currentSettings.greylistedDomains });
-    renderList('greylist-ul', currentSettings.greylistedDomains, removeGreylistDomain);
+    renderGreylistList(currentSettings.greylistedDomains);
     await cleanupDomainIfTabsClosed(domain);
   }
 }
@@ -916,13 +1022,19 @@ function setupDataManagement() {
           cleanedToday: 0,
           totalDeleted: 0,
           whitelistedCount: currentSettings.whitelistedDomains.length,
-          lastCleanedDate: currentSettings.stats.lastCleanedDate
+          trackersBlocked: 0,
+          lastCleanedDate: currentSettings.stats.lastCleanedDate,
+          dailyHistory: currentSettings.stats.dailyHistory || {}
         };
         await saveSettings({ stats: resetStats });
         const totalDeletedEl = document.getElementById('stats-total-deleted');
         if (totalDeletedEl) totalDeletedEl.textContent = '0';
         const cleanedTodayEl = document.getElementById('stats-cleaned-today');
         if (cleanedTodayEl) cleanedTodayEl.textContent = '0';
+        const statsTrackersBlocked = document.getElementById('stats-trackers-blocked');
+        if (statsTrackersBlocked) statsTrackersBlocked.textContent = '0';
+        const statsBandwidthSaved = document.getElementById('stats-bandwidth-saved');
+        if (statsBandwidthSaved) statsBandwidthSaved.textContent = '0 KB';
         alert("Statistics reset!");
       }
     });
@@ -1000,10 +1112,33 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
   if (areaName === 'local') {
     currentSettings = await getSettings();
     renderWhitelistPremium(currentSettings.whitelistedDomains);
-    renderList('greylist-ul', currentSettings.greylistedDomains, removeGreylistDomain);
+    renderGreylistList(currentSettings.greylistedDomains);
     renderPopularSites();
     updateWhitelistLimitBadge();
     updateWhitelistedStatsCount(currentSettings.whitelistedDomains.length);
     togglePremiumOverlay(currentSettings.isPremium);
+    
+    // Update stats in real-time
+    const statsTotalDeleted = document.getElementById('stats-total-deleted');
+    if (statsTotalDeleted) statsTotalDeleted.textContent = currentSettings.stats.totalDeleted;
+    const statsCleanedToday = document.getElementById('stats-cleaned-today');
+    if (statsCleanedToday) statsCleanedToday.textContent = currentSettings.stats.cleanedToday;
+    
+    const trackersBlockedVal = currentSettings.stats.trackersBlocked || 0;
+    const statsTrackersBlocked = document.getElementById('stats-trackers-blocked');
+    if (statsTrackersBlocked) statsTrackersBlocked.textContent = trackersBlockedVal;
+    
+    const bandwidthSavedVal = trackersBlockedVal * 12;
+    const statsBandwidthSaved = document.getElementById('stats-bandwidth-saved');
+    if (statsBandwidthSaved) {
+      if (bandwidthSavedVal >= 1024) {
+        statsBandwidthSaved.textContent = (bandwidthSavedVal / 1024).toFixed(1) + ' MB';
+      } else {
+        statsBandwidthSaved.textContent = bandwidthSavedVal + ' KB';
+      }
+    }
+    
+    renderLast7DaysChart(currentSettings.stats.dailyHistory);
+    renderDetailedDeletionLog(currentSettings.deletionLog);
   }
 });

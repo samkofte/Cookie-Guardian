@@ -51,6 +51,35 @@ export function isDomainMatched(domain, list) {
     }
     pattern = pattern.toLowerCase().trim();
     if (!pattern) return false;
+    
+    // 1. Regular Expression Check
+    if ((pattern.startsWith('/') && pattern.endsWith('/')) || pattern.includes('^') || pattern.includes('$') || pattern.includes('|')) {
+      try {
+        let cleanRegexStr = pattern;
+        if (pattern.startsWith('/') && pattern.endsWith('/')) {
+          cleanRegexStr = pattern.substring(1, pattern.length - 1);
+        }
+        const regex = new RegExp(cleanRegexStr, 'i');
+        if (regex.test(domain)) return true;
+      } catch (e) {
+        // invalid regex, ignore and fallback
+      }
+    }
+    
+    // 2. Wildcard (Glob) Check
+    if (pattern.includes('*')) {
+      try {
+        const regexStr = '^' + pattern
+          .replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&') // escape special characters except *
+          .replace(/\*/g, '.*') + '$';
+        const regex = new RegExp(regexStr, 'i');
+        if (regex.test(domain)) return true;
+      } catch (e) {
+        // fallback
+      }
+    }
+    
+    // 3. Exact matching or Subdomain matching
     return domain === pattern || domain.endsWith('.' + pattern);
   });
 }

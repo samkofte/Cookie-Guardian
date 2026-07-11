@@ -29,6 +29,7 @@ async function initPopup() {
   document.getElementById('cleaned-today-count').textContent = stats.cleanedToday;
   document.getElementById('total-deleted-count').textContent = stats.totalDeleted;
   document.getElementById('whitelisted-count').textContent = currentSettings.whitelistedDomains.length;
+  document.getElementById('trackers-blocked-count').textContent = stats.trackersBlocked || 0;
   
   // 4. Handle active tab
   chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
@@ -37,6 +38,13 @@ async function initPopup() {
       if (domain) {
         currentTabDomain = domain;
         document.getElementById('current-domain').textContent = domain;
+        
+        // Load active container profile
+        const baseDomain = getBaseDomain(domain) || domain;
+        const profileKey = 'active_profile_' + baseDomain;
+        const result = await chrome.storage.local.get(profileKey);
+        const activeProfile = result[profileKey] || 'default';
+        document.getElementById('container-profile-select').value = activeProfile;
         
         // Load cookies for current tab
         await refreshCookieList();
@@ -529,6 +537,7 @@ function setupEventListeners() {
     const settings = await getSettings();
     document.getElementById('cleaned-today-count').textContent = settings.stats.cleanedToday;
     document.getElementById('total-deleted-count').textContent = settings.stats.totalDeleted;
+    document.getElementById('trackers-blocked-count').textContent = settings.stats.trackersBlocked || 0;
   });
   
   // Dropdown triggering
@@ -552,11 +561,14 @@ function setupEventListeners() {
       cleanedToday: 0,
       totalDeleted: 0,
       whitelistedCount: settings.stats.whitelistedCount,
-      lastCleanedDate: settings.stats.lastCleanedDate
+      trackersBlocked: 0,
+      lastCleanedDate: settings.stats.lastCleanedDate,
+      dailyHistory: settings.stats.dailyHistory || {}
     };
     await saveSettings({ stats: resetStats });
     document.getElementById('cleaned-today-count').textContent = '0';
     document.getElementById('total-deleted-count').textContent = '0';
+    document.getElementById('trackers-blocked-count').textContent = '0';
   });
   
   // Upgrade Button (PRO simulation)
@@ -749,5 +761,78 @@ function setupCookieEditor() {
       }
       await refreshCookieList();
     }
+  });
+
+  // Container Switch Profile
+  document.getElementById('container-profile-select').addEventListener('change', async (e) => {
+    if (!currentTabDomain) return;
+    const baseDomain = getBaseDomain(currentTabDomain) || currentTabDomain;
+    const selectedProfile = e.target.value;
+    
+    // Fetch previous active profile
+    const profileKey = 'active_profile_' + baseDomain;
+    const prevResult = await chrome.storage.local.get(profileKey);
+    const prevProfile = prevResult[profileKey] || 'default';
+    
+    if (prevProfile === selectedProfile) return;
+    
+    // 1. Fetch current cookies for this base domain
+    const cookies = await getCookiesForDomain(baseDomain);
+    
+    // 2. Backup current cookies
+    const backupKey = 'cookies_jar_' + baseDomain + '_' + prevProfile;
+    await chrome.storage.local.set({ [backupKey]: cookies });
+    
+    // 3. Clear current cookies
+    for (const cookie of cookies) {
+      const protocol = cookie.secure ? "https://" : "http://";
+      const cleanDomain = cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain;
+      const url = `${protocol}${cleanDomain}${cookie.path}`;
+      await new Promise((resolve) => {
+        chrome.cookies.remove({ url: url, name: cookie.name }, () => resolve());
+      });
+    }
+    
+    // 4. Restore cookies from new profile jar
+    const restoreKey = 'cookies_jar_' + baseDomain + '_' + selectedProfile;
+    const restoreResult = await chrome.storage.local.get(restoreKey);
+    const newCookies = restoreResult[restoreKey] || [];
+    
+    for (const cookie of newCookies) {
+      const protocol = cookie.secure ? "https://" : "http://";
+      const cleanDomain = cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain;
+      const url = `${protocol}${cleanDomain}${cookie.path}`;
+      
+      const setDetails = {
+        url: url,
+        name: cookie.name,
+        value: cookie.value,
+        path: cookie.path,
+        secure: cookie.secure,
+        httpOnly: cookie.httpOnly,
+        sameSite: cookie.sameSite,
+        storeId: cookie.storeId
+      };
+      
+      if (!cookie.hostOnly) {
+        setDetails.domain = cookie.domain;
+      }
+      if (!cookie.session) {
+        setDetails.expirationDate = cookie.expirationDate;
+      }
+      
+      await new Promise((resolve) => {
+        chrome.cookies.set(setDetails, () => resolve());
+      });
+    }
+    
+    // 5. Save selected active profile and reload tab
+    await chrome.storage.local.set({ [profileKey]: selectedProfile });
+    
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs && tabs[0] && tabs[0].id) {
+        chrome.tabs.reload(tabs[0].id);
+      }
+    });
   });
 }

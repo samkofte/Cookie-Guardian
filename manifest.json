@@ -10,7 +10,9 @@
     "activeTab",
     "alarms",
     "browsingData",
-    "notifications"
+    "notifications",
+    "declarativeNetRequest",
+    "webRequest"
   ],
   "host_permissions": [
     "<all_urls>"

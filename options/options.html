@@ -400,8 +400,12 @@
               <div class="metric-title" data-i18n="statToday">DELETED TODAY</div>
             </div>
             <div class="stats-metric-box">
-              <div class="metric-num" id="stats-daily-average">0</div>
-              <div class="metric-title" data-i18n="statAverage">DAILY AVERAGE</div>
+              <div class="metric-num" id="stats-trackers-blocked">0</div>
+              <div class="metric-title" data-i18n="statTrackersBlocked">TRACKERS BLOCKED</div>
+            </div>
+            <div class="stats-metric-box">
+              <div class="metric-num" id="stats-bandwidth-saved">0 KB</div>
+              <div class="metric-title" data-i18n="statBandwidthSaved">EST. DATA SAVED</div>
             </div>
           </div>
         </div>
@@ -476,6 +480,19 @@
             <div class="row-control">
               <label class="switch">
                 <input type="checkbox" id="setting-clean-cache">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label" data-i18n="labelBlockThirdParty">Block Third-Party Cookies</label>
+              <div class="row-desc" data-i18n="descBlockThirdParty">Stop cross-site trackers from saving tracking cookies</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-block-thirdparty">
                 <span class="slider"></span>
               </label>
             </div>

@@ -28,6 +28,7 @@ export const DEFAULT_SETTINGS = {
   cleanIndexedDB: false,
   cleanCache: false,
   isPremium: false, // Default is free version
+  blockThirdPartyCookies: false, // Premium feature: block third-party cookies
   
   // Lists
   whitelistedDomains: [],
@@ -41,6 +42,7 @@ export const DEFAULT_SETTINGS = {
     cleanedToday: 0,
     totalDeleted: 0,
     whitelistedCount: 0,
+    trackersBlocked: 0, // Stat for blocked third-party trackers
     lastCleanedDate: '',
     dailyHistory: {} // Stores YYYY-MM-DD: count
   }
@@ -146,8 +148,19 @@ export async function incrementDeletedCount(count) {
 export function updateBadge(count) {
   if (count > 0) {
     chrome.action.setBadgeText({ text: count.toString() });
-    chrome.action.setBadgeBackgroundColor({ color: '#0fbfa3' });
+    chrome.action.setBadgeBackgroundColor({ color: '#7c3aed' }); // update to purple
   } else {
     chrome.action.setBadgeText({ text: '' });
   }
+}
+
+// Increment trackers blocked count
+export async function incrementTrackersBlocked(count) {
+  if (count <= 0) return;
+  const current = await getSettings();
+  const updatedStats = {
+    ...(current.stats || {}),
+    trackersBlocked: (current.stats.trackersBlocked || 0) + count
+  };
+  await saveSettings({ stats: updatedStats });
 }
