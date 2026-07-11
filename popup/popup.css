@@ -3,16 +3,16 @@
 body {
   width: 380px;
   background-color: var(--bg-main);
-  padding: 16px;
+  padding: 10px 12px;
   margin: 0;
-  overflow-x: hidden;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
 .popup-container {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 
 /* Header */
@@ -63,7 +63,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 22px;
+  padding: 14px 20px;
   border-radius: 16px;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
@@ -92,7 +92,7 @@ body {
   height: 64px;
   border-radius: 50%;
   transition: all 0.3s;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   position: relative;
 }
 
@@ -171,7 +171,7 @@ body {
   backdrop-filter: blur(16px);
   border: 1px solid var(--border-color);
   box-shadow: var(--glass-shadow);
-  padding: 12px 18px;
+  padding: 10px 16px;
   border-radius: 14px;
 }
 
@@ -352,11 +352,10 @@ body {
   box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
 }
 
-/* Lifetime Stats */
 .lifetime-stats-container {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+  flex-direction: column;
+  gap: 6px;
   background: transparent;
   padding: 0 4px;
 }
@@ -364,7 +363,7 @@ body {
 .stats-row {
   display: flex;
   gap: 12px;
-  flex-grow: 1;
+  width: 100%;
 }
 
 .stat-box {
@@ -401,8 +400,9 @@ body {
 .stats-actions {
   display: flex;
   align-items: center;
-  padding-bottom: 8px;
-  padding-left: 12px;
+  justify-content: flex-end;
+  padding-bottom: 2px;
+  padding-right: 4px;
 }
 
 .clear-all-btn {
