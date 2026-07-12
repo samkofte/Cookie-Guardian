@@ -84,18 +84,21 @@ export function isDomainMatched(domain, list) {
   });
 }
 
-// Helper to identify login/session cookies
+// Helper to identify login/session cookies and consent/preference cookies
 export function isLoginCookie(cookie) {
   if (cookie.session) return true;
   
   const name = cookie.name.toLowerCase();
   const value = cookie.value.toLowerCase();
   
-  // Common session/auth cookie name patterns
+  // Common session/auth/consent cookie name patterns
   const loginPatterns = [
     'session', 'token', 'auth', 'login', 'user', 'member', 'sid', 'ssid', 
     'userid', 'sign', 'remember', 'secure', 'pass', 'pwd', 'key', 'uuid', 
-    'guid', 'jwt', 'sso', 'identity', 'cred', 'claim', 'account'
+    'guid', 'jwt', 'sso', 'identity', 'cred', 'claim', 'account',
+    // Consent and GDPR preference keywords to prevent banner popups
+    'consent', 'cookie', 'gdpr', 'ccpa', 'notice', 'banner', 'dismiss', 
+    'accept', 'decline', 'choice', 'opt', 'ack', 'cfg', 'pref'
   ];
   
   const isMatch = loginPatterns.some(pattern => name.includes(pattern));

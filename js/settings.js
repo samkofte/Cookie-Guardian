@@ -29,7 +29,7 @@ export const DEFAULT_SETTINGS = {
   cleanCache: false,
   isPremium: false, // Default is free version
   blockThirdPartyCookies: false, // Premium feature: block third-party cookies
-  keepOnlyLoginCookiesForWhitelisted: true, // Keep only login cookies for whitelisted sites, clean the rest
+  keepOnlyLoginCookiesForWhitelisted: false, // Keep only login cookies for whitelisted sites, clean the rest
   enableCookieHardening: false, // Security: Enforce Secure and SameSite Lax/Strict to prevent theft
   autoAcceptCookies: false, // Automatically accept/dismiss cookie consent banners
   
