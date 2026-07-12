@@ -1,6 +1,6 @@
 /* background.js */
 import { DEFAULT_SETTINGS, getSettings, saveSettings, incrementDeletedCount, incrementTrackersBlocked } from './js/settings.js';
-import { getDomainFromUrl, getBaseDomain, isDomainMatched, cleanCookiesForDomain, cleanAllCookies, cleanBrowsingData } from './js/cookieManager.js';
+import { getDomainFromUrl, getBaseDomain, isDomainMatched, cleanCookiesForDomain, cleanAllCookies, cleanBrowsingData, isLoginCookie } from './js/cookieManager.js';
 
 // Keep track of active tab URLs in memory to detect navigation away and closed tab domains
 const tabUrlMap = {};
@@ -322,6 +322,11 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
   if (settings.enableCookieAging) {
     trackCookieCreation(cookie);
   }
+  
+  // Cookie Hardening (Anti-Theft Shield)
+  if (settings.enableCookieHardening) {
+    await hardenCookie(cookie);
+  }
 });
 
 async function trackCookieCreation(cookie) {
@@ -342,6 +347,53 @@ async function removeFromCookieTrack(cookie) {
   if (track[key]) {
     delete track[key];
     await chrome.storage.local.set({ cookieCreationTimes: track });
+  }
+}
+
+// Hardens login cookies to prevent session theft (XSS/MITM/CSRF protection)
+let isHardening = false; // prevents recursive loop when calling cookies.set inside change listener
+async function hardenCookie(cookie) {
+  if (isHardening) return;
+  const settings = await getSettings();
+  if (!settings.enabled || !settings.enableCookieHardening) return;
+  
+  const needsSecure = !cookie.secure;
+  const needsSameSite = !cookie.sameSite || cookie.sameSite === 'no_restriction';
+  
+  if (isLoginCookie(cookie) && (needsSecure || needsSameSite)) {
+    isHardening = true;
+    
+    const protocol = "https://"; // Force Secure (HTTPS only)
+    const cleanDomain = cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain;
+    const url = `${protocol}${cleanDomain}${cookie.path}`;
+    
+    const setDetails = {
+      url: url,
+      name: cookie.name,
+      value: cookie.value,
+      path: cookie.path,
+      secure: true, // Force Secure
+      httpOnly: cookie.httpOnly, // Keep same httpOnly flag (forcing it may break client-side site scripts)
+      sameSite: cookie.sameSite === 'no_restriction' ? 'lax' : (cookie.sameSite || 'lax'), // Force Lax SameSite
+      storeId: cookie.storeId
+    };
+    
+    if (!cookie.hostOnly) {
+      setDetails.domain = cookie.domain;
+    }
+    
+    if (!cookie.session) {
+      setDetails.expirationDate = cookie.expirationDate;
+    }
+    
+    chrome.cookies.set(setDetails, () => {
+      if (chrome.runtime.lastError) {
+        console.error("Failed to harden cookie:", chrome.runtime.lastError.message);
+      } else {
+        console.log(`Hardened cookie: ${cookie.name} on ${cookie.domain} (Secure=true, SameSite=Lax)`);
+      }
+      isHardening = false;
+    });
   }
 }
 

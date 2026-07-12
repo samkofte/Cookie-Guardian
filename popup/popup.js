@@ -130,6 +130,16 @@ async function refreshCookieList() {
       nameSpan.style.maxWidth = '160px';
       nameSpan.style.color = 'var(--text-main)';
       
+      // Security warning badge for cookie theft protection
+      if (!cookie.secure || !cookie.httpOnly) {
+        const warnIcon = document.createElement('span');
+        warnIcon.textContent = ' ⚠️';
+        warnIcon.style.cursor = 'help';
+        warnIcon.style.fontSize = '9px';
+        warnIcon.title = 'Vulnerability warning: Lacks Secure or HttpOnly attribute. Click to inspect/harden.';
+        nameSpan.appendChild(warnIcon);
+      }
+      
       const valSpan = document.createElement('span');
       valSpan.className = 'cookie-card-val-preview';
       valSpan.textContent = cookie.value;

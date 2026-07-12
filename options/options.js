@@ -148,6 +148,7 @@ async function loadAndBindSettings() {
   bindCheckbox('setting-clean-indexeddb', 'cleanIndexedDB');
   bindCheckbox('setting-clean-cache', 'cleanCache');
   bindCheckbox('setting-block-thirdparty', 'blockThirdPartyCookies');
+  bindCheckbox('setting-cookie-hardening', 'enableCookieHardening');
 
   bindSelect('setting-theme', 'theme', (val) => {
     applyTheme(val);
