@@ -31,7 +31,7 @@ export const DEFAULT_SETTINGS = {
   blockThirdPartyCookies: false, // Premium feature: block third-party cookies
   keepOnlyLoginCookiesForWhitelisted: false, // Keep only login cookies for whitelisted sites, clean the rest
   enableCookieHardening: false, // Security: Enforce Secure and SameSite Lax/Strict to prevent theft
-  autoAcceptCookies: false, // Automatically accept/dismiss cookie consent banners
+  autoAcceptCookies: true, // Automatically accept/dismiss cookie consent banners
   
   // Lists
   whitelistedDomains: [],
