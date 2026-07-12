@@ -54,6 +54,8 @@ export const TRANSLATIONS = {
     // Whitelist Tab
     titleWhitelist: "Whitelisted Sites",
     introWhitelist: "Whitelisted sites are permanently protected. Their cookies will never be deleted.",
+    labelKeepOnlyLogin: "Keep Only Login Cookies",
+    descKeepOnlyLogin: "For whitelisted sites, keep only login/session cookies and delete tracking/other cookies",
     placeholderWhitelist: "example.com",
     btnAdd: "Add",
     titleQuickAdd: "Quick Add Popular Sites",
@@ -178,6 +180,8 @@ export const TRANSLATIONS = {
     // Whitelist Tab
     titleWhitelist: "Güvenli Listelenmiş Siteler (Kalıcı)",
     introWhitelist: "Güvenli listedeki siteler kalıcı olarak korunur. Çerezleri asla silinmez.",
+    labelKeepOnlyLogin: "Sadece Giriş Çerezlerini Koru",
+    descKeepOnlyLogin: "Güvenli listedeki siteler için sadece oturum/giriş çerezlerini saklar, diğer çerezleri temizler",
     placeholderWhitelist: "ornek.com",
     btnAdd: "Ekle",
     titleQuickAdd: "Popüler Siteleri Hızlı Ekle",

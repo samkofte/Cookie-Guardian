@@ -84,6 +84,54 @@ export function isDomainMatched(domain, list) {
   });
 }
 
+// Helper to identify login/session cookies
+export function isLoginCookie(cookie) {
+  if (cookie.session) return true;
+  
+  const name = cookie.name.toLowerCase();
+  const value = cookie.value.toLowerCase();
+  
+  // Common session/auth cookie name patterns
+  const loginPatterns = [
+    'session', 'token', 'auth', 'login', 'user', 'member', 'sid', 'ssid', 
+    'userid', 'sign', 'remember', 'secure', 'pass', 'pwd', 'key', 'uuid', 
+    'guid', 'jwt', 'sso', 'identity', 'cred', 'claim', 'account'
+  ];
+  
+  const isMatch = loginPatterns.some(pattern => name.includes(pattern));
+  if (isMatch) return true;
+  
+  // Some sites use short names for login tokens (like 'at', 'rt', 'ut', 'uid', 'li')
+  if (value.length > 32 && (name.includes('at') || name.includes('rt') || name.includes('ut') || name.includes('uid') || name.includes('li') || name.includes('key'))) {
+    return true;
+  }
+  
+  return false;
+}
+
+// Clean only non-login cookies for a whitelisted domain
+export async function cleanNonLoginCookiesForDomain(domain) {
+  const settings = await getSettings();
+  const cookies = await getCookiesForDomain(domain);
+  let deletedCount = 0;
+  const deletedNames = [];
+  
+  for (const cookie of cookies) {
+    if (isLoginCookie(cookie)) {
+      continue;
+    }
+    await deleteCookie(cookie);
+    deletedCount++;
+    deletedNames.push(cookie.name);
+  }
+  
+  if (deletedCount > 0) {
+    await incrementDeletedCount(deletedCount);
+    await logDeletionEvent(domain, deletedCount, deletedNames);
+  }
+  return deletedCount;
+}
+
 // Get all cookies for a specific domain (and all its subdomains/parent domains recursively)
 export function getCookiesForDomain(domain) {
   return new Promise((resolve) => {
@@ -119,6 +167,9 @@ export async function cleanCookiesForDomain(domain, ignoreWhitelist = false) {
   
   if (!ignoreWhitelist) {
     if (isDomainMatched(domain, settings.whitelistedDomains)) {
+      if (settings.keepOnlyLoginCookiesForWhitelisted) {
+        return await cleanNonLoginCookiesForDomain(domain);
+      }
       return 0; // Whitelisted, do not delete
     }
   }
@@ -141,6 +192,7 @@ export async function cleanCookiesForDomain(domain, ignoreWhitelist = false) {
   if (deletedCount > 0) {
     await incrementDeletedCount(deletedCount);
     await logDeletionEvent(domain, deletedCount, deletedNames);
+    await cleanBrowsingDataForDomain(domain);
   }
   return deletedCount;
 }
@@ -181,6 +233,16 @@ export async function cleanAllCookies(includeGreylist = false) {
         
         // Skip whitelisted
         if (isDomainMatched(domain, settings.whitelistedDomains)) {
+          if (settings.keepOnlyLoginCookiesForWhitelisted) {
+            if (!isLoginCookie(cookie)) {
+              await deleteCookie(cookie);
+              deletedCount++;
+              if (!deletedByDomain[domain]) {
+                deletedByDomain[domain] = [];
+              }
+              deletedByDomain[domain].push(cookie.name);
+            }
+          }
           continue;
         }
         
@@ -208,6 +270,7 @@ export async function cleanAllCookies(includeGreylist = false) {
         // Log deletions per domain
         for (const [dom, names] of Object.entries(deletedByDomain)) {
           await logDeletionEvent(dom, names.length, names);
+          await cleanBrowsingDataForDomain(dom);
         }
       }
       resolve(deletedCount);
@@ -215,21 +278,46 @@ export async function cleanAllCookies(includeGreylist = false) {
   });
 }
 
-// Clean storage/cache (Premium simulation/implementation)
+// Clean storage per domain (respects Whitelist!)
+export async function cleanBrowsingDataForDomain(domain) {
+  const settings = await getSettings();
+  if (!settings.enabled) return;
+  
+  // NEVER clear browsing data for whitelisted domains!
+  if (isDomainMatched(domain, settings.whitelistedDomains)) {
+    return;
+  }
+  
+  const dataTypes = {};
+  if (settings.cleanLocalStorage) dataTypes.localStorage = true;
+  if (settings.cleanIndexedDB) dataTypes.indexedDB = true;
+  
+  if (Object.keys(dataTypes).length > 0) {
+    const origin = `https://${domain}`;
+    const originHttp = `http://${domain}`;
+    try {
+      chrome.browsingData.remove({
+        origins: [origin, originHttp],
+        since: 0
+      }, dataTypes, () => {
+        console.log(`Browsing data cleared for: ${domain}`);
+      });
+    } catch (e) {
+      console.error(`Error clearing browsing data for ${domain}:`, e);
+    }
+  }
+}
+
+// Clear global cache if enabled (since cache is global in Chrome)
 export async function cleanBrowsingData() {
   const settings = await getSettings();
   if (!settings.enabled) return;
   
-  const dataTypes = {};
-  if (settings.cleanLocalStorage) dataTypes.localStorage = true;
-  if (settings.cleanCache) dataTypes.cache = true;
-  if (settings.cleanIndexedDB) dataTypes.indexedDB = true;
-  
-  if (Object.keys(dataTypes).length > 0) {
+  if (settings.cleanCache) {
     chrome.browsingData.remove({
       since: 0
-    }, dataTypes, () => {
-      console.log("Browsing data cleared:", dataTypes);
+    }, { cache: true }, () => {
+      console.log("Global browser cache cleared.");
     });
   }
 }

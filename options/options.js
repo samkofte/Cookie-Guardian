@@ -142,6 +142,7 @@ async function loadAndBindSettings() {
   bindCheckbox('setting-enable-schedule', 'enableScheduledCleanup');
   
   bindCheckbox('setting-auto-expire-greylist', 'autoExpireGreylist');
+  bindCheckbox('setting-keep-only-login', 'keepOnlyLoginCookiesForWhitelisted');
   
   bindCheckbox('setting-clean-localstorage', 'cleanLocalStorage');
   bindCheckbox('setting-clean-indexeddb', 'cleanIndexedDB');

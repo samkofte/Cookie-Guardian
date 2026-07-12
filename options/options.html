@@ -274,6 +274,19 @@
             <span id="whitelist-limit-badge" class="limit-badge">0/23</span>
           </div>
           
+          <div class="settings-row" style="margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="row-info" style="flex: 1;">
+              <label class="row-label" data-i18n="labelKeepOnlyLogin">Keep Only Login Cookies</label>
+              <div class="row-desc" style="font-size: 11px; color: var(--text-muted);" data-i18n="descKeepOnlyLogin">For whitelisted sites, keep only login/session cookies and delete tracking/other cookies</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-keep-only-login">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          
           <div class="list-manager">
             <div class="list-inputs-row">
               <input type="text" id="whitelist-input" placeholder="example.com" data-i18n-placeholder="placeholderWhitelist" class="custom-input-text">
