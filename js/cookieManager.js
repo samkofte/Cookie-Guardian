@@ -38,15 +38,25 @@ export function getBaseDomain(domain) {
 
 // Known SSO (Single Sign-On) and Cross-Domain Authentication clusters
 const SSO_CLUSTERS = [
+  // E-commerce & Streaming & Gaming
   ['primevideo.com', 'amazon.com', 'amazon.com.tr', 'amazon.co.uk', 'amazon.de', 'primegaming.com', 'twitch.tv'],
   ['youtube.com', 'google.com', 'google.com.tr'],
   ['hbomax.com', 'max.com', 'hbo.com'],
   ['disneyplus.com', 'disney.com', 'bamgrid.com'],
+  ['paramountplus.com', 'cbs.com'],
+  
+  // Tech Giants & Ecosystems
   ['microsoft.com', 'live.com', 'office.com', 'xbox.com'],
   ['apple.com', 'icloud.com'],
+  ['facebook.com', 'instagram.com', 'messenger.com', 'meta.com'],
+  ['yahoo.com', 'flickr.com'],
+  
+  // Gaming
   ['epicgames.com', 'unrealengine.com'],
   ['ea.com', 'origin.com'],
-  ['playstation.com', 'sony.com', 'sonyentertainmentnetwork.com']
+  ['playstation.com', 'sony.com', 'sonyentertainmentnetwork.com'],
+  ['steampowered.com', 'steamcommunity.com', 'valvesoftware.com'],
+  ['roblox.com', 'rbxcdn.com']
 ];
 
 // Check if a domain matches any patterns in a list (includes subdomains)
