@@ -36,10 +36,35 @@ export function getBaseDomain(domain) {
   return parts.slice(-2).join('.');
 }
 
+// Known SSO (Single Sign-On) and Cross-Domain Authentication clusters
+const SSO_CLUSTERS = [
+  ['primevideo.com', 'amazon.com', 'amazon.com.tr', 'amazon.co.uk', 'amazon.de', 'primegaming.com', 'twitch.tv'],
+  ['youtube.com', 'google.com', 'google.com.tr'],
+  ['hbomax.com', 'max.com', 'hbo.com'],
+  ['disneyplus.com', 'disney.com', 'bamgrid.com'],
+  ['microsoft.com', 'live.com', 'office.com', 'xbox.com'],
+  ['apple.com', 'icloud.com'],
+  ['epicgames.com', 'unrealengine.com'],
+  ['ea.com', 'origin.com'],
+  ['playstation.com', 'sony.com', 'sonyentertainmentnetwork.com']
+];
+
 // Check if a domain matches any patterns in a list (includes subdomains)
 export function isDomainMatched(domain, list) {
   if (!domain || !list || !Array.isArray(list)) return false;
   domain = domain.toLowerCase().trim();
+  
+  // Expand domain with SSO clusters to prevent cross-domain auth from being broken
+  // If the user whitelisted 'primevideo.com' and the cookie is for 'amazon.com',
+  // we check if ANY domain in the cluster matches the whitelist.
+  let domainsToCheck = [domain];
+  for (const cluster of SSO_CLUSTERS) {
+    if (cluster.some(c => domain === c || domain.endsWith('.' + c))) {
+      for (const c of cluster) {
+        if (!domainsToCheck.includes(c)) domainsToCheck.push(c);
+      }
+    }
+  }
   
   return list.some(item => {
     if (!item) return false;
@@ -52,35 +77,38 @@ export function isDomainMatched(domain, list) {
     pattern = pattern.toLowerCase().trim();
     if (!pattern) return false;
     
-    // 1. Regular Expression Check
-    if ((pattern.startsWith('/') && pattern.endsWith('/')) || pattern.includes('^') || pattern.includes('$') || pattern.includes('|')) {
-      try {
-        let cleanRegexStr = pattern;
-        if (pattern.startsWith('/') && pattern.endsWith('/')) {
-          cleanRegexStr = pattern.substring(1, pattern.length - 1);
+    for (const d of domainsToCheck) {
+      // 1. Regular Expression Check
+      if ((pattern.startsWith('/') && pattern.endsWith('/')) || pattern.includes('^') || pattern.includes('$') || pattern.includes('|')) {
+        try {
+          let cleanRegexStr = pattern;
+          if (pattern.startsWith('/') && pattern.endsWith('/')) {
+            cleanRegexStr = pattern.substring(1, pattern.length - 1);
+          }
+          const regex = new RegExp(cleanRegexStr, 'i');
+          if (regex.test(d)) return true;
+        } catch (e) {
+          // invalid regex, ignore and fallback
         }
-        const regex = new RegExp(cleanRegexStr, 'i');
-        if (regex.test(domain)) return true;
-      } catch (e) {
-        // invalid regex, ignore and fallback
       }
-    }
-    
-    // 2. Wildcard (Glob) Check
-    if (pattern.includes('*')) {
-      try {
-        const regexStr = '^' + pattern
-          .replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&') // escape special characters except *
-          .replace(/\*/g, '.*') + '$';
-        const regex = new RegExp(regexStr, 'i');
-        if (regex.test(domain)) return true;
-      } catch (e) {
-        // fallback
+      
+      // 2. Wildcard (Glob) Check
+      if (pattern.includes('*')) {
+        try {
+          const regexStr = '^' + pattern
+            .replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&') // escape special characters except *
+            .replace(/\*/g, '.*') + '$';
+          const regex = new RegExp(regexStr, 'i');
+          if (regex.test(d)) return true;
+        } catch (e) {
+          // fallback
+        }
       }
+      
+      // 3. Exact matching or Subdomain matching
+      if (d === pattern || d.endsWith('.' + pattern)) return true;
     }
-    
-    // 3. Exact matching or Subdomain matching
-    return domain === pattern || domain.endsWith('.' + pattern);
+    return false;
   });
 }
 
