@@ -18,6 +18,8 @@ const BANNER_SELECTORS = [
   '[class*="modal" i]', '[id*="modal" i]', '[class*="popup" i]', '[id*="popup" i]'
 ];
 
+let dismissTimeout = null;
+
 async function handleCookieBanners() {
   // Query settings first from local storage
   const settings = await new Promise((resolve) => {
@@ -29,13 +31,19 @@ async function handleCookieBanners() {
 
   if (!settings.enabled || !settings.autoAcceptCookies) return;
 
-  // Run banner solver
+  // Run banner solver with debounce to prevent PC exhaustion
   const observer = new MutationObserver(() => {
-    dismissBanners();
+    if (dismissTimeout) {
+      clearTimeout(dismissTimeout);
+    }
+    dismissTimeout = setTimeout(() => {
+      dismissBanners();
+    }, 1000); // 1 second debounce
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
-  dismissBanners();
+  // Initial run
+  dismissTimeout = setTimeout(() => dismissBanners(), 500);
 }
 
 function dismissBanners() {

@@ -306,21 +306,24 @@ async function updateBadgeForActiveTab() {
 updateBadgeForActiveTab();
 
 
-// Cookie Tracker for Aging (Advanced feature)
+// Cookie Tracker for Aging (Advanced feature) - Batched to prevent PC performance issues
+let cookieAgeUpdateTimeout = null;
+let cookieAgePendingUpdates = { add: [], remove: [] };
+
 chrome.cookies.onChanged.addListener(async (changeInfo) => {
   const settings = await getSettings();
   if (!settings.enabled) return;
   
   const { removed, cookie } = changeInfo;
   if (removed) {
-    // Delete from tracking
-    removeFromCookieTrack(cookie);
+    if (settings.enableCookieAging) {
+      queueCookieRemoval(cookie);
+    }
     return;
   }
   
-  // Track creation time
   if (settings.enableCookieAging) {
-    trackCookieCreation(cookie);
+    queueCookieCreation(cookie);
   }
   
   // Cookie Hardening (Anti-Theft Shield)
@@ -329,25 +332,50 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
   }
 });
 
-async function trackCookieCreation(cookie) {
-  const result = await chrome.storage.local.get({ cookieCreationTimes: {} });
-  const track = result.cookieCreationTimes;
-  const key = `${cookie.domain}|${cookie.name}|${cookie.path}`;
-  
-  if (!track[key]) {
-    track[key] = Date.now();
-    await chrome.storage.local.set({ cookieCreationTimes: track });
-  }
+function queueCookieCreation(cookie) {
+  cookieAgePendingUpdates.add.push(cookie);
+  scheduleCookieAgeStorageUpdate();
 }
 
-async function removeFromCookieTrack(cookie) {
-  const result = await chrome.storage.local.get({ cookieCreationTimes: {} });
-  const track = result.cookieCreationTimes;
-  const key = `${cookie.domain}|${cookie.name}|${cookie.path}`;
-  if (track[key]) {
-    delete track[key];
-    await chrome.storage.local.set({ cookieCreationTimes: track });
-  }
+function queueCookieRemoval(cookie) {
+  cookieAgePendingUpdates.remove.push(cookie);
+  scheduleCookieAgeStorageUpdate();
+}
+
+function scheduleCookieAgeStorageUpdate() {
+  if (cookieAgeUpdateTimeout) clearTimeout(cookieAgeUpdateTimeout);
+  cookieAgeUpdateTimeout = setTimeout(async () => {
+    // Clone queues and reset immediately to capture new events while processing
+    const toAdd = [...cookieAgePendingUpdates.add];
+    const toRemove = [...cookieAgePendingUpdates.remove];
+    cookieAgePendingUpdates = { add: [], remove: [] };
+    
+    if (toAdd.length === 0 && toRemove.length === 0) return;
+
+    const result = await chrome.storage.local.get({ cookieCreationTimes: {} });
+    const track = result.cookieCreationTimes;
+    let changed = false;
+    
+    for (const cookie of toAdd) {
+      const key = `${cookie.domain}|${cookie.name}|${cookie.path}`;
+      if (!track[key]) {
+        track[key] = Date.now();
+        changed = true;
+      }
+    }
+    
+    for (const cookie of toRemove) {
+      const key = `${cookie.domain}|${cookie.name}|${cookie.path}`;
+      if (track[key]) {
+        delete track[key];
+        changed = true;
+      }
+    }
+    
+    if (changed) {
+      await chrome.storage.local.set({ cookieCreationTimes: track });
+    }
+  }, 2000); // Batch every 2 seconds to minimize I/O overhead
 }
 
 // Hardens login cookies to prevent session theft (XSS/MITM/CSRF protection)
