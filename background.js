@@ -92,7 +92,17 @@ chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
   // Check if other tabs are still open on the same base domain
   const isStillOpen = await isDomainStillOpen(baseDomain);
   if (!isStillOpen) {
-    scheduleCleanup(baseDomain, settings.cleanDelay);
+    // If it's a whitelisted domain, process hardening and cleanup IMMEDIATELY on tab close
+    if (isDomainMatched(baseDomain, settings.whitelistedDomains)) {
+      if (settings.enableCookieHardening) {
+        hardenDomainCookies(baseDomain);
+      }
+      // Schedule cleanup immediately (bypass delay for whitelisted to ensure non-login cookies are wiped instantly)
+      scheduleCleanup(baseDomain, 0); 
+    } else {
+      // Normal greylist/unwhitelisted domains wait for cleanDelay
+      scheduleCleanup(baseDomain, settings.cleanDelay);
+    }
   }
   updateBadgeForActiveTab();
 });
@@ -326,11 +336,19 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
     queueCookieCreation(cookie);
   }
   
-  // Cookie Hardening (Anti-Theft Shield)
-  if (settings.enableCookieHardening) {
-    await hardenCookie(cookie);
-  }
 });
+
+// Process hardening for an entire domain at once (e.g., when the tab is closed)
+async function hardenDomainCookies(domain) {
+  const settings = await getSettings();
+  if (!settings.enabled || !settings.enableCookieHardening) return;
+  
+  chrome.cookies.getAll({ domain }, async (cookies) => {
+    for (const cookie of cookies) {
+      await hardenCookie(cookie);
+    }
+  });
+}
 
 function queueCookieCreation(cookie) {
   cookieAgePendingUpdates.add.push(cookie);
