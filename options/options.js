@@ -224,7 +224,12 @@ async function loadAndBindSettings() {
         vaultSetup.style.display = 'block';
         e.target.checked = false; // Prevent enabling until password is set
       } else {
-        await saveSettings({ enableCookieVault: isEnabled });
+        if (!isEnabled) {
+          // If turning off the vault, clear the password so they aren't permanently locked out if forgotten
+          await saveSettings({ enableCookieVault: false, vaultPasswordVerify: null, vaultPasswordSalt: null });
+        } else {
+          await saveSettings({ enableCookieVault: true });
+        }
         vaultSetup.style.display = 'none';
       }
     });
@@ -257,7 +262,6 @@ async function loadAndBindSettings() {
       alert('Vault Password Saved! Cookie Vault is now ENABLED.');
     });
   }
-}
 
 // Render Detailed Deletion History Log
   renderDetailedDeletionLog(currentSettings.deletionLog);
