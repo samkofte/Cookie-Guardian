@@ -83,7 +83,8 @@ chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
   if (!closedUrl) return;
   
   const settings = await getSettings();
-  if (!settings.enabled || !settings.deleteOnTabClose) return;
+  if (!settings.enabled) return;
+  if (!settings.deleteOnTabClose && !settings.enableCookieVault && !settings.enableCookieHardening) return;
   
   const closedDomain = getDomainFromUrl(closedUrl);
   if (!closedDomain) return;
@@ -192,15 +193,39 @@ function scheduleCleanup(domain, delaySeconds) {
 // Browser Startup Cleanup
 chrome.runtime.onStartup.addListener(async () => {
   const settings = await getSettings();
-  if (settings.enabled && settings.deleteOnStartup) {
-    // Delete all cookies on startup, including greylisted domains
-    // (since Greylist means keep only for session, and startup is a new session)
-    const cleanedCount = await cleanAllCookies(true); 
-    console.log(`Startup clean deleted ${cleanedCount} cookies.`);
-    if (cleanedCount > 0) {
-      showNotification("Startup Cleanup", cleanedCount);
+  if (settings.enabled) {
+    if (settings.deleteOnStartup) {
+      // Delete all cookies on startup, including greylisted domains
+      // (since Greylist means keep only for session, and startup is a new session)
+      const cleanedCount = await cleanAllCookies(true); 
+      console.log(`Startup clean deleted ${cleanedCount} cookies.`);
+      if (cleanedCount > 0) {
+        showNotification("Startup Cleanup", cleanedCount);
+      }
+      await cleanBrowsingData();
     }
-    await cleanBrowsingData();
+    
+    // ENFORCE VAULT LOCK: If vault is enabled, wipe all whitelisted cookies from the browser
+    // This ensures that even if Chrome was closed forcefully without giving the extension
+    // time to delete the cookies, the next time Chrome opens, the vault remains securely locked.
+    if (settings.enableCookieVault) {
+      let vaultWipeCount = 0;
+      for (const domain of settings.whitelistedDomains) {
+         const cookies = await getCookiesForDomain(domain);
+         for (const cookie of cookies) {
+            const protocol = cookie.secure ? "https://" : "http://";
+            const cleanDomain = cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain;
+            const url = `${protocol}${cleanDomain}${cookie.path}`;
+            
+            // Delete the leaked cookie to enforce the lock
+            await new Promise(r => chrome.cookies.remove({ url: url, name: cookie.name, storeId: cookie.storeId }, () => r()));
+            vaultWipeCount++;
+         }
+      }
+      if (vaultWipeCount > 0) {
+        console.log(`[VAULT] Enforced lock on startup: wiped ${vaultWipeCount} leaked cookies.`);
+      }
+    }
   }
 });
 
