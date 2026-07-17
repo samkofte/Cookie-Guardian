@@ -124,16 +124,23 @@ export function isDomainMatched(domain, list) {
 
 // Helper to identify login/session cookies and consent/preference cookies
 export function isLoginCookie(cookie) {
+  // Session cookies (deleted when browser closes) are usually safe to keep
   if (cookie.session) return true;
+  
+  // HttpOnly cookies cannot be accessed via JavaScript.
+  // Almost all tracking/analytics cookies (like _ga, _fbp) are accessed via JS, so they are not HttpOnly.
+  // Conversely, backend auth/security tokens are almost always HttpOnly to prevent XSS.
+  if (cookie.httpOnly) return true;
   
   const name = cookie.name.toLowerCase();
   const value = cookie.value.toLowerCase();
   
   // Common session/auth/consent cookie name patterns
   const loginPatterns = [
-    'session', 'token', 'auth', 'login', 'user', 'member', 'sid', 'ssid', 
+    'session', 'sess', 'token', 'auth', 'login', 'user', 'member', 'sid', 'ssid', 
     'userid', 'sign', 'remember', 'secure', 'pass', 'pwd', 'key', 'uuid', 
-    'guid', 'jwt', 'sso', 'identity', 'cred', 'claim', 'account',
+    'guid', 'jwt', 'sso', 'identity', 'cred', 'claim', 'account', 'ticket',
+    'hash', 'csrf', 'xsrf', 'state', 'nonce', 'main', 'profile',
     // Consent and GDPR preference keywords to prevent banner popups
     'consent', 'cookie', 'gdpr', 'ccpa', 'notice', 'banner', 'dismiss', 
     'accept', 'decline', 'choice', 'opt', 'ack', 'cfg', 'pref'
@@ -180,14 +187,16 @@ export function getCookiesForDomain(domain) {
       resolve([]);
       return;
     }
-    chrome.cookies.getAll({}, (allCookies) => {
-      if (!allCookies) {
+    const baseDomain = getBaseDomain(domain);
+    // Fetch only cookies related to the base domain rather than ALL cookies in the browser
+    chrome.cookies.getAll({ domain: baseDomain }, (domainCookies) => {
+      if (!domainCookies) {
         resolve([]);
         return;
       }
       
       const normDomain = domain.toLowerCase();
-      const filtered = allCookies.filter(cookie => {
+      const filtered = domainCookies.filter(cookie => {
         const cookieDom = cookie.domain.toLowerCase();
         const normCookieDom = cookieDom.startsWith('.') ? cookieDom.substring(1) : cookieDom;
         

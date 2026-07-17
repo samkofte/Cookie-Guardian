@@ -67,14 +67,32 @@ export async function logDeletionEvent(domain, count, cookieNames = []) {
   await saveSettings({ deletionLog: updatedLogs });
 }
 
-// Get settings from storage
+// In-memory cache for settings to vastly improve performance
+let settingsCache = null;
+
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && settingsCache) {
+      for (let key in changes) {
+        settingsCache[key] = changes[key].newValue !== undefined ? changes[key].newValue : DEFAULT_SETTINGS[key];
+      }
+    }
+  });
+}
+
+// Get settings from storage (uses memory cache if available)
 export function getSettings() {
   return new Promise((resolve) => {
+    if (settingsCache) {
+      resolve(settingsCache);
+      return;
+    }
     chrome.storage.local.get(DEFAULT_SETTINGS, (items) => {
       if (items.installDate === 0) {
         items.installDate = Date.now();
         chrome.storage.local.set({ installDate: items.installDate });
       }
+      settingsCache = items;
       resolve(items);
     });
   });
