@@ -848,7 +848,6 @@ function setupCookieEditor() {
   });
 }
 
-import { saveVaultKeyToSession, getVaultKeyFromSession } from '../js/crypto.js';
 
 // Vault Unlock Logic
 document.addEventListener('DOMContentLoaded', async () => {
