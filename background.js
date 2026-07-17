@@ -229,6 +229,35 @@ chrome.runtime.onStartup.addListener(async () => {
   }
 });
 
+// Enforce Vault Lock when all visible Chrome windows are closed
+// (Necessary because Chrome often runs in the background even when all windows are closed on Windows)
+chrome.windows.onRemoved.addListener(async (windowId) => {
+  const windows = await new Promise(r => chrome.windows.getAll({}, r));
+  const hasVisibleWindows = windows.some(w => w.type === 'normal' || w.type === 'popup');
+  
+  if (!hasVisibleWindows) {
+    const settings = await getSettings();
+    if (settings.enableCookieVault) {
+      // Clear the session key to lock the vault
+      await chrome.storage.session.remove('vaultKey');
+      
+      // Wipe all whitelisted cookies to enforce the lock
+      let vaultWipeCount = 0;
+      for (const domain of settings.whitelistedDomains) {
+         const cookies = await getCookiesForDomain(domain);
+         for (const cookie of cookies) {
+            const protocol = cookie.secure ? "https://" : "http://";
+            const cleanDomain = cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain;
+            const url = `${protocol}${cleanDomain}${cookie.path}`;
+            await new Promise(r => chrome.cookies.remove({ url: url, name: cookie.name, storeId: cookie.storeId }, () => r()));
+            vaultWipeCount++;
+         }
+      }
+      console.log(`[VAULT] Locked vault because all visible windows closed. Wiped ${vaultWipeCount} cookies.`);
+    }
+  }
+});
+
 // Periodic Cookie Aging Check alarm creation
 chrome.alarms.create('cookieAgingCheck', { periodInMinutes: 30 });
 
