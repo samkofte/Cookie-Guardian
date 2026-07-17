@@ -191,7 +191,7 @@ function scheduleCleanup(domain, delaySeconds) {
 }
 
 // Browser Startup Cleanup
-chrome.runtime.onStartup.addListener(async () => {
+async function enforceStartupLock() {
   const settings = await getSettings();
   if (settings.enabled) {
     if (settings.deleteOnStartup) {
@@ -226,8 +226,28 @@ chrome.runtime.onStartup.addListener(async () => {
       }
       if (vaultWipeCount > 0) {
         console.log(`[VAULT] Enforced lock on startup: wiped ${vaultWipeCount} leaked cookies.`);
+        // Reload any tabs that might have loaded with the leaked cookies
+        const tabs = await new Promise(r => chrome.tabs.query({}, r));
+        for (const tab of tabs) {
+           if (tab.url) {
+             const base = getBaseDomain(getDomainFromUrl(tab.url));
+             if (isDomainMatched(base, settings.whitelistedDomains)) {
+                chrome.tabs.reload(tab.id);
+             }
+           }
+        }
       }
     }
+  }
+}
+
+chrome.runtime.onStartup.addListener(enforceStartupLock);
+
+// Also enforce on the first window created (handles cases where Chrome runs in the background)
+chrome.windows.onCreated.addListener(async (window) => {
+  const windows = await new Promise(r => chrome.windows.getAll({}, r));
+  if (windows.length === 1) {
+    enforceStartupLock();
   }
 });
 
