@@ -81,6 +81,13 @@ export async function getVaultKeyFromSession() {
   return null;
 }
 
+// Generate SHA-256 Hash of a string
+export async function hashString(str) {
+  const enc = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', enc.encode(str));
+  return bufferToHex(hashBuffer);
+}
+
 // Encrypt plaintext string
 // Returns { ciphertextHex, ivHex }
 export async function encryptData(plaintext, key) {

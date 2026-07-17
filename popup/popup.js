@@ -1,7 +1,7 @@
 /* popup/popup.js */
 import { getSettings, saveSettings, checkDailyStatsReset } from '../js/settings.js';
 import { getDomainFromUrl, getBaseDomain, getCookiesForDomain, cleanCookiesForDomain, isDomainMatched, cleanAllCookies } from '../js/cookieManager.js';
-import { deriveKeyFromPassword, exportKeyToHex } from '../js/crypto.js';
+import { deriveKeyFromPassword, exportKeyToHex, saveVaultKeyToSession, getVaultKeyFromSession, hashString } from '../js/crypto.js';
 import { applyTranslations } from '../js/i18n.js';
 
 let currentTabDomain = '';
@@ -862,7 +862,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const vaultKey = await getVaultKeyFromSession();
     if (!vaultKey) {
       // Vault is locked! Show overlay
-      vaultOverlay.style.display = 'block';
+      vaultOverlay.style.display = 'flex';
     }
   }
   
@@ -874,12 +874,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const key = await deriveKeyFromPassword(pwd, settings.vaultPasswordSalt);
         const testEnc = await window.crypto.subtle.exportKey('raw', key);
-        const verifyHash = Array.from(new Uint8Array(testEnc))
+        const exportedKeyHex = Array.from(new Uint8Array(testEnc))
           .map(b => b.toString(16).padStart(2, '0')).join('');
+          
+        const verifyHash = await hashString(exportedKeyHex);
           
         if (verifyHash === settings.vaultPasswordVerify) {
           // Password is correct!
-          await saveVaultKeyToSession(verifyHash); // Actually we need to save the exported key, verifyHash IS the exported key in hex!
+          await saveVaultKeyToSession(exportedKeyHex);
           vaultOverlay.style.display = 'none';
           vaultError.style.display = 'none';
           
