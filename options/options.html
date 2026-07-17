@@ -454,6 +454,39 @@
 
       <!-- ================= ADVANCED TAB ================= -->
       <section id="tab-advanced" class="tab-content">
+        <!-- Cookie Vault (Ultra Security) Card -->
+        <div class="settings-card vault-card" style="border: 1px solid var(--accent); box-shadow: 0 0 15px rgba(10, 132, 255, 0.1);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <h2 class="card-title" style="margin-bottom: 0; color: var(--accent);">Cookie Vault (Ultra Security)</h2>
+          </div>
+          <div class="card-intro">Encrypts whitelisted login cookies at rest when a tab is closed. Defeats Infostealer malware by completely removing cookies from the browser database. Requires entering a Master Password once per session.</div>
+          
+          <div class="settings-row">
+            <div class="row-info">
+              <label class="row-label">Enable Cookie Vault</label>
+              <div class="row-desc">Requires setting a Master Password</div>
+            </div>
+            <div class="row-control">
+              <label class="switch">
+                <input type="checkbox" id="setting-enable-vault">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          
+          <div id="vault-password-setup" style="display: none; margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 8px;">
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Set your Master Password. <strong>If you forget this, you will be logged out of all vaulted sites!</strong></p>
+            <div style="display: flex; gap: 10px;">
+              <input type="password" id="vault-password-input" placeholder="Master Password" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-dark); color: var(--text);">
+              <button id="btn-save-vault-password" class="btn btn-primary">Save Password</button>
+            </div>
+          </div>
+        </div>
+
         <!-- Advanced Cleansing Card -->
         <div class="settings-card">
           <h2 class="card-title" data-i18n="titleAdvanced">Advanced Storage Cleansing</h2>

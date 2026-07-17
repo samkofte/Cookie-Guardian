@@ -1,6 +1,7 @@
 /* popup/popup.js */
 import { getSettings, saveSettings, checkDailyStatsReset } from '../js/settings.js';
 import { getDomainFromUrl, getBaseDomain, getCookiesForDomain, cleanCookiesForDomain, isDomainMatched, cleanAllCookies } from '../js/cookieManager.js';
+import { deriveKeyFromPassword, exportKeyToHex } from '../js/crypto.js';
 import { applyTranslations } from '../js/i18n.js';
 
 let currentTabDomain = '';
@@ -846,3 +847,59 @@ function setupCookieEditor() {
     });
   });
 }
+
+import { saveVaultKeyToSession, getVaultKeyFromSession } from '../js/crypto.js';
+
+// Vault Unlock Logic
+document.addEventListener('DOMContentLoaded', async () => {
+  const settings = await getSettings();
+  const vaultOverlay = document.getElementById('vault-unlock-overlay');
+  const vaultInput = document.getElementById('vault-unlock-input');
+  const vaultBtn = document.getElementById('btn-vault-unlock');
+  const vaultError = document.getElementById('vault-error-msg');
+  
+  if (settings.enableCookieVault) {
+    const vaultKey = await getVaultKeyFromSession();
+    if (!vaultKey) {
+      // Vault is locked! Show overlay
+      vaultOverlay.style.display = 'block';
+    }
+  }
+  
+  if (vaultBtn) {
+    vaultBtn.addEventListener('click', async () => {
+      const pwd = vaultInput.value;
+      if (!pwd) return;
+      
+      try {
+        const key = await deriveKeyFromPassword(pwd, settings.vaultPasswordSalt);
+        const testEnc = await window.crypto.subtle.exportKey('raw', key);
+        const verifyHash = Array.from(new Uint8Array(testEnc))
+          .map(b => b.toString(16).padStart(2, '0')).join('');
+          
+        if (verifyHash === settings.vaultPasswordVerify) {
+          // Password is correct!
+          await saveVaultKeyToSession(verifyHash); // Actually we need to save the exported key, verifyHash IS the exported key in hex!
+          vaultOverlay.style.display = 'none';
+          vaultError.style.display = 'none';
+          
+          // Trigger a vault check on the current tab to restore cookies instantly
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs[0]) {
+              const url = new URL(tabs[0].url);
+              chrome.runtime.sendMessage({ action: 'checkVaultRestore', domain: url.hostname }, (restored) => {
+                if (restored) chrome.tabs.reload(tabs[0].id);
+              });
+            }
+          });
+          
+        } else {
+          vaultError.style.display = 'block';
+        }
+      } catch (e) {
+        vaultError.style.display = 'block';
+      }
+    });
+  }
+});
+

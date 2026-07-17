@@ -1,5 +1,13 @@
 /* js/content.js */
 
+// Immediate check for Vault Restoration
+chrome.runtime.sendMessage({ action: 'checkVaultRestore', domain: window.location.hostname }, (restored) => {
+  if (restored) {
+    console.log("[VAULT] Cookies restored from vault. Reloading page...");
+    window.location.reload();
+  }
+});
+
 // Common text patterns for cookie buttons (Accept/Allow)
 const ACCEPT_TEXT_PATTERNS = [
   'accept', 'allow', 'agree', 'consent', 'kabul', 'izin', 'okey', 'ok',

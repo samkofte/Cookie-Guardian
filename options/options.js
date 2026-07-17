@@ -1,5 +1,6 @@
 /* options/options.js */
 import { getSettings, saveSettings, resetSettings } from '../js/settings.js';
+import { generateSalt, deriveKeyFromPassword } from '../js/crypto.js';
 import { isDomainMatched, getDomainFromUrl, getBaseDomain, cleanCookiesForDomain } from '../js/cookieManager.js';
 import { applyTranslations } from '../js/i18n.js';
 
@@ -1145,3 +1146,53 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
     renderDetailedDeletionLog(currentSettings.deletionLog);
   }
 });
+
+// Vault Setup Logic
+document.addEventListener('DOMContentLoaded', () => {
+  const vaultToggle = document.getElementById('setting-enable-vault');
+  const vaultSetup = document.getElementById('vault-password-setup');
+  const vaultPassInput = document.getElementById('vault-password-input');
+  const vaultPassSave = document.getElementById('btn-save-vault-password');
+  
+  if (vaultToggle) {
+    vaultToggle.checked = currentSettings.enableCookieVault;
+    
+    vaultToggle.addEventListener('change', async (e) => {
+      const isEnabled = e.target.checked;
+      if (isEnabled && !currentSettings.vaultPasswordVerify) {
+        vaultSetup.style.display = 'block';
+        e.target.checked = false; // Prevent enabling until password is set
+      } else {
+        await saveSettings({ enableCookieVault: isEnabled });
+        vaultSetup.style.display = 'none';
+      }
+    });
+    
+    vaultPassSave.addEventListener('click', async () => {
+      const pwd = vaultPassInput.value;
+      if (pwd.length < 4) {
+        alert('Password must be at least 4 characters');
+        return;
+      }
+      
+      const salt = generateSalt();
+      const key = await deriveKeyFromPassword(pwd, salt);
+      const testEnc = await window.crypto.subtle.exportKey('raw', key);
+      const verifyHash = Array.from(new Uint8Array(testEnc))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+        
+      await saveSettings({
+        vaultPasswordSalt: salt,
+        vaultPasswordVerify: verifyHash,
+        enableCookieVault: true
+      });
+      
+      vaultToggle.checked = true;
+      vaultSetup.style.display = 'none';
+      vaultPassInput.value = '';
+      currentSettings = await getSettings();
+      alert('Vault Password Saved! Cookie Vault is now ENABLED.');
+    });
+  }
+});
+

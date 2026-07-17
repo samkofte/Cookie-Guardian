@@ -1,6 +1,7 @@
 /* background.js */
 import { DEFAULT_SETTINGS, getSettings, saveSettings, incrementDeletedCount, incrementTrackersBlocked } from './js/settings.js';
-import { getDomainFromUrl, getBaseDomain, isDomainMatched, cleanCookiesForDomain, cleanAllCookies, cleanBrowsingData, isLoginCookie } from './js/cookieManager.js';
+import { getDomainFromUrl, getBaseDomain, isDomainMatched, cleanCookiesForDomain, cleanAllCookies, cleanBrowsingData, isLoginCookie, getCookiesForDomain } from './js/cookieManager.js';
+import { getVaultKeyFromSession, encryptData, decryptData } from './js/crypto.js';
 
 // Keep track of active tab URLs in memory to detect navigation away and closed tab domains
 const tabUrlMap = {};
@@ -94,9 +95,39 @@ chrome.tabs.onRemoved.addListener(async (tabId, removeInfo) => {
   if (!isStillOpen) {
     // If it's a whitelisted domain, process hardening and cleanup IMMEDIATELY on tab close
     if (isDomainMatched(baseDomain, settings.whitelistedDomains)) {
-      if (settings.enableCookieHardening) {
+      
+      if (settings.enableCookieVault) {
+        // COOKIE VAULT LOGIC
+        const vaultKey = await getVaultKeyFromSession();
+        if (vaultKey) {
+          const domainCookies = await getCookiesForDomain(baseDomain);
+          // Only vault login cookies. Non-login are deleted by scheduleCleanup.
+          const loginCookies = domainCookies.filter(c => isLoginCookie(c));
+          
+          if (loginCookies.length > 0) {
+            const plaintext = JSON.stringify(loginCookies);
+            const encrypted = await encryptData(plaintext, vaultKey);
+            
+            // Save to vault storage
+            settings.vaultCookies[baseDomain] = {
+              ciphertext: encrypted.ciphertextHex,
+              iv: encrypted.ivHex
+            };
+            await saveSettings({ vaultCookies: settings.vaultCookies });
+            
+            // DELETE cookies from browser now that they are safely vaulted
+            for (const cookie of loginCookies) {
+              const protocol = cookie.secure ? "https://" : "http://";
+              const url = `${protocol}${cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain}${cookie.path}`;
+              chrome.cookies.remove({ url: url, name: cookie.name, storeId: cookie.storeId });
+            }
+            console.log(`[VAULT] Encrypted and removed ${loginCookies.length} cookies for ${baseDomain}`);
+          }
+        }
+      } else if (settings.enableCookieHardening) {
         hardenDomainCookies(baseDomain);
       }
+      
       // Schedule cleanup immediately (bypass delay for whitelisted to ensure non-login cookies are wiped instantly)
       scheduleCleanup(baseDomain, 0); 
     } else {
@@ -194,6 +225,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
         await cleanBrowsingData();
       }
     }
+    
     chrome.alarms.clear(alarm.name);
   } else if (alarm.name === 'scheduledCleanup') {
     const settings = await getSettings();
@@ -600,3 +632,74 @@ chrome.webRequest.onHeadersReceived.addListener(
   { urls: ["<all_urls>"] },
   ["responseHeaders"]
 );
+
+ / /   A d d   m e s s a g e   l i s t e n e r   f o r   c o n t e n t   s c r i p t   i n t e r a c t i o n s 
+ c h r o m e . r u n t i m e . o n M e s s a g e . a d d L i s t e n e r ( ( m e s s a g e ,   s e n d e r ,   s e n d R e s p o n s e )   = >   { 
+     i f   ( m e s s a g e . a c t i o n   = = =   ' t r i g g e r C l e a n u p ' )   { 
+         c l e a n A l l C o o k i e s ( ) . t h e n ( c o u n t   = >   { 
+             s e n d R e s p o n s e ( {   c o u n t :   c o u n t   } ) ; 
+         } ) ; 
+         r e t u r n   t r u e ;   / /   K e e p   m e s s a g e   c h a n n e l   o p e n   f o r   a s y n c   r e s p o n s e 
+     } 
+     
+     i f   ( m e s s a g e . a c t i o n   = = =   ' c h e c k V a u l t R e s t o r e ' )   { 
+         h a n d l e V a u l t R e s t o r e C h e c k ( m e s s a g e . d o m a i n ) . t h e n ( s e n d R e s p o n s e ) ; 
+         r e t u r n   t r u e ; 
+     } 
+ } ) ; 
+ 
+ a s y n c   f u n c t i o n   h a n d l e V a u l t R e s t o r e C h e c k ( d o m a i n )   { 
+     c o n s t   s e t t i n g s   =   a w a i t   g e t S e t t i n g s ( ) ; 
+     i f   ( ! s e t t i n g s . e n a b l e C o o k i e V a u l t )   r e t u r n   f a l s e ; 
+     
+     c o n s t   b a s e D o m a i n   =   g e t B a s e D o m a i n ( d o m a i n ) ; 
+     i f   ( ! s e t t i n g s . v a u l t C o o k i e s [ b a s e D o m a i n ] )   r e t u r n   f a l s e ; 
+     
+     c o n s t   v a u l t K e y   =   a w a i t   g e t V a u l t K e y F r o m S e s s i o n ( ) ; 
+     i f   ( ! v a u l t K e y )   r e t u r n   f a l s e ;   / /   V a u l t   i s   l o c k e d 
+     
+     c o n s t   v a u l t D a t a   =   s e t t i n g s . v a u l t C o o k i e s [ b a s e D o m a i n ] ; 
+     c o n s t   p l a i n t e x t   =   a w a i t   d e c r y p t D a t a ( v a u l t D a t a . c i p h e r t e x t ,   v a u l t D a t a . i v ,   v a u l t K e y ) ; 
+     i f   ( ! p l a i n t e x t )   r e t u r n   f a l s e ;   / /   D e c r y p t i o n   f a i l e d 
+     
+     t r y   { 
+         c o n s t   c o o k i e s   =   J S O N . p a r s e ( p l a i n t e x t ) ; 
+         f o r   ( c o n s t   c o o k i e   o f   c o o k i e s )   { 
+             c o n s t   p r o t o c o l   =   c o o k i e . s e c u r e   ?   \ \  
+ h t t p s : / / \ \   :   \ \ h t t p : / / \ \ ; 
+             c o n s t   c l e a n D o m a i n   =   c o o k i e . d o m a i n . s t a r t s W i t h ( ' . ' )   ?   c o o k i e . d o m a i n . s u b s t r i n g ( 1 )   :   c o o k i e . d o m a i n ; 
+             c o n s t   u r l   =   \ \ \ \ \ ; 
+             
+             c o n s t   s e t D e t a i l s   =   { 
+                 u r l :   u r l , 
+                 n a m e :   c o o k i e . n a m e , 
+                 v a l u e :   c o o k i e . v a l u e , 
+                 p a t h :   c o o k i e . p a t h , 
+                 s e c u r e :   c o o k i e . s e c u r e , 
+                 h t t p O n l y :   c o o k i e . h t t p O n l y , 
+                 s a m e S i t e :   c o o k i e . s a m e S i t e   | |   ' l a x ' , 
+                 s t o r e I d :   c o o k i e . s t o r e I d 
+             } ; 
+             i f   ( ! c o o k i e . h o s t O n l y )   s e t D e t a i l s . d o m a i n   =   c o o k i e . d o m a i n ; 
+             i f   ( ! c o o k i e . s e s s i o n )   s e t D e t a i l s . e x p i r a t i o n D a t e   =   c o o k i e . e x p i r a t i o n D a t e ; 
+             
+             a w a i t   n e w   P r o m i s e ( r   = >   c h r o m e . c o o k i e s . s e t ( s e t D e t a i l s ,   ( )   = >   r ( ) ) ) ; 
+         } 
+         
+         / /   R e m o v e   f r o m   v a u l t   n o w   t h a t   t h e y   a r e   r e s t o r e d   t o   t h e   b r o w s e r 
+         d e l e t e   s e t t i n g s . v a u l t C o o k i e s [ b a s e D o m a i n ] ; 
+         a w a i t   s a v e S e t t i n g s ( {   v a u l t C o o k i e s :   s e t t i n g s . v a u l t C o o k i e s   } ) ; 
+         
+         c o n s o l e . l o g ( \ [ V A U L T ]   D e c r y p t e d   a n d   r e s t o r e d   \   c o o k i e s   f o r   \ \ ) ; 
+         r e t u r n   t r u e ;   / /   I n d i c a t e s   c o o k i e s   w e r e   r e s t o r e d ,   p a g e   s h o u l d   r e l o a d 
+     }   c a t c h   ( e )   { 
+         c o n s o l e . e r r o r ( \ \ F a i l e d  
+ t o  
+ p a r s e  
+ v a u l t  
+ c o o k i e s : \ \ ,   e ) ; 
+         r e t u r n   f a l s e ; 
+     } 
+ } 
+  
+ 

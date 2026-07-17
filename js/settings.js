@@ -32,6 +32,10 @@ export const DEFAULT_SETTINGS = {
   keepOnlyLoginCookiesForWhitelisted: false, // Keep only login cookies for whitelisted sites, clean the rest
   enableCookieHardening: false, // Security: Enforce Secure and SameSite Lax/Strict to prevent theft
   autoAcceptCookies: true, // Automatically accept/dismiss cookie consent banners
+  enableCookieVault: false, // Encrypts cookies at rest when tab is closed
+  vaultPasswordSalt: '', // Used for key derivation
+  vaultPasswordVerify: '', // Used to verify if entered password is correct
+  vaultCookies: {}, // Stores the encrypted cookies per domain { 'domain': 'ciphertext_hex' }
   
   // Lists
   whitelistedDomains: [],
