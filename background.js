@@ -209,6 +209,8 @@ chrome.runtime.onStartup.addListener(async () => {
     // This ensures that even if Chrome was closed forcefully without giving the extension
     // time to delete the cookies, the next time Chrome opens, the vault remains securely locked.
     if (settings.enableCookieVault) {
+      await updateDNRRules();
+      
       let vaultWipeCount = 0;
       for (const domain of settings.whitelistedDomains) {
          const cookies = await getCookiesForDomain(domain);
@@ -240,6 +242,9 @@ chrome.windows.onRemoved.addListener(async (windowId) => {
     if (settings.enableCookieVault) {
       // Clear the session key to lock the vault
       await chrome.storage.session.remove('vaultKey');
+      
+      // Update DNR rules to enforce network-level cookie blocking
+      await updateDNRRules();
       
       // Wipe all whitelisted cookies to enforce the lock
       let vaultWipeCount = 0;
@@ -622,34 +627,51 @@ function cookieSecurePlaceholderCheck(domain) {
 async function updateDNRRules() {
   try {
     const settings = await getSettings();
+    const addRules = [];
+    const removeRuleIds = [1, 2];
+
+    // Rule 1: Third-party cookie blocking
     if (settings.enabled && settings.blockThirdPartyCookies && settings.isPremium) {
-      chrome.declarativeNetRequest.updateDynamicRules({
-        addRules: [
-          {
-            id: 1,
-            priority: 1,
-            action: {
-              type: "modifyHeaders",
-              requestHeaders: [
-                { header: "Cookie", operation: "remove" }
-              ],
-              responseHeaders: [
-                { header: "Set-Cookie", operation: "remove" }
-              ]
-            },
-            condition: {
-              domainType: "thirdParty",
-              resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "object", "xmlhttprequest", "ping", "csp_report", "media", "websocket", "other"]
-            }
-          }
-        ],
-        removeRuleIds: [1]
-      });
-    } else {
-      chrome.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: [1]
+      addRules.push({
+        id: 1,
+        priority: 1,
+        action: {
+          type: "modifyHeaders",
+          requestHeaders: [{ header: "Cookie", operation: "remove" }],
+          responseHeaders: [{ header: "Set-Cookie", operation: "remove" }]
+        },
+        condition: {
+          domainType: "thirdParty",
+          resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "object", "xmlhttprequest", "ping", "csp_report", "media", "websocket", "other"]
+        }
       });
     }
+
+    // Rule 2: Vault Lock Enforcement
+    if (settings.enabled && settings.enableCookieVault) {
+      const vaultKey = await getVaultKeyFromSession();
+      if (!vaultKey && settings.whitelistedDomains.length > 0) {
+        // Vault is locked! Strip all cookies for whitelisted domains to prevent leaked sessions from being used
+        addRules.push({
+          id: 2,
+          priority: 2,
+          action: {
+            type: "modifyHeaders",
+            requestHeaders: [{ header: "Cookie", operation: "remove" }],
+            responseHeaders: [{ header: "Set-Cookie", operation: "remove" }]
+          },
+          condition: {
+            requestDomains: settings.whitelistedDomains,
+            resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "object", "xmlhttprequest", "ping", "csp_report", "media", "websocket", "other"]
+          }
+        });
+      }
+    }
+
+    chrome.declarativeNetRequest.updateDynamicRules({
+      addRules: addRules,
+      removeRuleIds: removeRuleIds
+    });
   } catch (e) {
     console.error("Error updating DNR rules:", e);
   }
@@ -687,73 +709,78 @@ chrome.webRequest.onHeadersReceived.addListener(
   ["responseHeaders"]
 );
 
- / /   A d d   m e s s a g e   l i s t e n e r   f o r   c o n t e n t   s c r i p t   i n t e r a c t i o n s 
- c h r o m e . r u n t i m e . o n M e s s a g e . a d d L i s t e n e r ( ( m e s s a g e ,   s e n d e r ,   s e n d R e s p o n s e )   = >   { 
-     i f   ( m e s s a g e . a c t i o n   = = =   ' t r i g g e r C l e a n u p ' )   { 
-         c l e a n A l l C o o k i e s ( ) . t h e n ( c o u n t   = >   { 
-             s e n d R e s p o n s e ( {   c o u n t :   c o u n t   } ) ; 
-         } ) ; 
-         r e t u r n   t r u e ;   / /   K e e p   m e s s a g e   c h a n n e l   o p e n   f o r   a s y n c   r e s p o n s e 
-     } 
-     
-     i f   ( m e s s a g e . a c t i o n   = = =   ' c h e c k V a u l t R e s t o r e ' )   { 
-         h a n d l e V a u l t R e s t o r e C h e c k ( m e s s a g e . d o m a i n ) . t h e n ( s e n d R e s p o n s e ) ; 
-         r e t u r n   t r u e ; 
-     } 
- } ) ; 
- 
- a s y n c   f u n c t i o n   h a n d l e V a u l t R e s t o r e C h e c k ( d o m a i n )   { 
-     c o n s t   s e t t i n g s   =   a w a i t   g e t S e t t i n g s ( ) ; 
-     i f   ( ! s e t t i n g s . e n a b l e C o o k i e V a u l t )   r e t u r n   f a l s e ; 
-     
-     c o n s t   b a s e D o m a i n   =   g e t B a s e D o m a i n ( d o m a i n ) ; 
-     i f   ( ! s e t t i n g s . v a u l t C o o k i e s [ b a s e D o m a i n ] )   r e t u r n   f a l s e ; 
-     
-     c o n s t   v a u l t K e y   =   a w a i t   g e t V a u l t K e y F r o m S e s s i o n ( ) ; 
-     i f   ( ! v a u l t K e y )   r e t u r n   f a l s e ;   / /   V a u l t   i s   l o c k e d 
-     
-     c o n s t   v a u l t D a t a   =   s e t t i n g s . v a u l t C o o k i e s [ b a s e D o m a i n ] ; 
-     c o n s t   p l a i n t e x t   =   a w a i t   d e c r y p t D a t a ( v a u l t D a t a . c i p h e r t e x t ,   v a u l t D a t a . i v ,   v a u l t K e y ) ; 
-     i f   ( ! p l a i n t e x t )   r e t u r n   f a l s e ;   / /   D e c r y p t i o n   f a i l e d 
-     
-     t r y   { 
-         c o n s t   c o o k i e s   =   J S O N . p a r s e ( p l a i n t e x t ) ; 
-         f o r   ( c o n s t   c o o k i e   o f   c o o k i e s )   { 
-             c o n s t   p r o t o c o l   =   c o o k i e . s e c u r e   ?   \ \  
- h t t p s : / / \ \   :   \ \ h t t p : / / \ \ ; 
-             c o n s t   c l e a n D o m a i n   =   c o o k i e . d o m a i n . s t a r t s W i t h ( ' . ' )   ?   c o o k i e . d o m a i n . s u b s t r i n g ( 1 )   :   c o o k i e . d o m a i n ; 
-             c o n s t   u r l   =   \ \ \ \ \ ; 
-             
-             c o n s t   s e t D e t a i l s   =   { 
-                 u r l :   u r l , 
-                 n a m e :   c o o k i e . n a m e , 
-                 v a l u e :   c o o k i e . v a l u e , 
-                 p a t h :   c o o k i e . p a t h , 
-                 s e c u r e :   c o o k i e . s e c u r e , 
-                 h t t p O n l y :   c o o k i e . h t t p O n l y , 
-                 s a m e S i t e :   c o o k i e . s a m e S i t e   | |   ' l a x ' , 
-                 s t o r e I d :   c o o k i e . s t o r e I d 
-             } ; 
-             i f   ( ! c o o k i e . h o s t O n l y )   s e t D e t a i l s . d o m a i n   =   c o o k i e . d o m a i n ; 
-             i f   ( ! c o o k i e . s e s s i o n )   s e t D e t a i l s . e x p i r a t i o n D a t e   =   c o o k i e . e x p i r a t i o n D a t e ; 
-             
-             a w a i t   n e w   P r o m i s e ( r   = >   c h r o m e . c o o k i e s . s e t ( s e t D e t a i l s ,   ( )   = >   r ( ) ) ) ; 
-         } 
-         
-         / /   R e m o v e   f r o m   v a u l t   n o w   t h a t   t h e y   a r e   r e s t o r e d   t o   t h e   b r o w s e r 
-         d e l e t e   s e t t i n g s . v a u l t C o o k i e s [ b a s e D o m a i n ] ; 
-         a w a i t   s a v e S e t t i n g s ( {   v a u l t C o o k i e s :   s e t t i n g s . v a u l t C o o k i e s   } ) ; 
-         
-         c o n s o l e . l o g ( \ [ V A U L T ]   D e c r y p t e d   a n d   r e s t o r e d   \   c o o k i e s   f o r   \ \ ) ; 
-         r e t u r n   t r u e ;   / /   I n d i c a t e s   c o o k i e s   w e r e   r e s t o r e d ,   p a g e   s h o u l d   r e l o a d 
-     }   c a t c h   ( e )   { 
-         c o n s o l e . e r r o r ( \ \ F a i l e d  
- t o  
- p a r s e  
- v a u l t  
- c o o k i e s : \ \ ,   e ) ; 
-         r e t u r n   f a l s e ; 
-     } 
- } 
-  
- 
+// Add message listener for content script interactions
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'triggerCleanup') {
+    cleanAllCookies().then(count => {
+      sendResponse({ count: count });
+    });
+    return true; // Keep message channel open for async response
+  }
+  
+  if (message.action === 'checkVaultRestore') {
+    handleVaultRestoreCheck(message.domain).then(sendResponse);
+    return true;
+  }
+  
+  if (message.action === 'updateDNRRules') {
+    updateDNRRules();
+    sendResponse({ success: true });
+    return true;
+  }
+});
+
+async function handleVaultRestoreCheck(domain) {
+  const settings = await getSettings();
+  if (!settings.enableCookieVault) return false;
+  
+  const baseDomain = getBaseDomain(domain);
+  if (!settings.vaultCookies[baseDomain]) return false;
+  
+  const vaultKey = await getVaultKeyFromSession();
+  if (!vaultKey) return false; // Vault is locked
+  
+  const vaultData = settings.vaultCookies[baseDomain];
+  const plaintext = await decryptData(vaultData.ciphertext, vaultData.iv, vaultKey);
+  if (!plaintext) return false; // Decryption failed
+  
+  try {
+    const cookies = JSON.parse(plaintext);
+    for (const cookie of cookies) {
+      const protocol = cookie.secure ? \\
+https://\\ : \\http://\\;
+      const cleanDomain = cookie.domain.startsWith('.') ? cookie.domain.substring(1) : cookie.domain;
+      const url = \\\\\;
+      
+      const setDetails = {
+        url: url,
+        name: cookie.name,
+        value: cookie.value,
+        path: cookie.path,
+        secure: cookie.secure,
+        httpOnly: cookie.httpOnly,
+        sameSite: cookie.sameSite || 'lax',
+        storeId: cookie.storeId
+      };
+      if (!cookie.hostOnly) setDetails.domain = cookie.domain;
+      if (!cookie.session) setDetails.expirationDate = cookie.expirationDate;
+      
+      await new Promise(r => chrome.cookies.set(setDetails, () => r()));
+    }
+    
+    // Remove from vault now that they are restored to the browser
+    delete settings.vaultCookies[baseDomain];
+    await saveSettings({ vaultCookies: settings.vaultCookies });
+    
+    console.log(\[VAULT] Decrypted and restored \ cookies for \\);
+    return true; // Indicates cookies were restored, page should reload
+  } catch (e) {
+    console.error(\\Failed
+to
+parse
+vault
+cookies:\\, e);
+    return false;
+  }
+}
+

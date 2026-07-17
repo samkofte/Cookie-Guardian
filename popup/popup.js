@@ -884,6 +884,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           vaultOverlay.style.display = 'none';
           vaultError.style.display = 'none';
           
+          // Refresh DNR rules to stop blocking cookies for whitelisted domains
+          chrome.runtime.sendMessage({ action: 'updateDNRRules' });
+          
           // Trigger a vault check on the current tab to restore cookies instantly
           chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (tabs[0]) {
