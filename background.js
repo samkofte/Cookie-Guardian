@@ -336,6 +336,10 @@ chrome.cookies.onChanged.addListener(async (changeInfo) => {
     queueCookieCreation(cookie);
   }
   
+  // Real-time Automatic Cookie Hardening (Anti-Theft Shield) with Batching
+  if (settings.enableCookieHardening) {
+    queueCookieHardening(cookie);
+  }
 });
 
 // Process hardening for an entire domain at once (e.g., when the tab is closed)
@@ -348,6 +352,36 @@ async function hardenDomainCookies(domain) {
       await hardenCookie(cookie);
     }
   });
+}
+
+let cookieHardeningUpdateTimeout = null;
+let cookieHardeningQueue = [];
+
+function queueCookieHardening(cookie) {
+  cookieHardeningQueue.push(cookie);
+  if (cookieHardeningUpdateTimeout) clearTimeout(cookieHardeningUpdateTimeout);
+  
+  cookieHardeningUpdateTimeout = setTimeout(async () => {
+    const toHarden = [...cookieHardeningQueue];
+    cookieHardeningQueue = []; // reset queue
+    
+    if (toHarden.length === 0) return;
+    
+    // De-duplicate cookies by name and domain
+    const uniqueCookies = [];
+    const seen = new Set();
+    for (const c of toHarden) {
+       const key = c.domain + '|' + c.name + '|' + c.path;
+       if (!seen.has(key)) {
+          seen.add(key);
+          uniqueCookies.push(c);
+       }
+    }
+    
+    for (const c of uniqueCookies) {
+       await hardenCookie(c);
+    }
+  }, 1500); // 1.5 second debounce for hardening to preserve CPU
 }
 
 function queueCookieCreation(cookie) {
@@ -432,13 +466,16 @@ async function hardenCookie(cookie) {
       setDetails.expirationDate = cookie.expirationDate;
     }
     
-    chrome.cookies.set(setDetails, () => {
-      if (chrome.runtime.lastError) {
-        console.error("Failed to harden cookie:", chrome.runtime.lastError.message);
-      } else {
-        console.log(`Hardened cookie: ${cookie.name} on ${cookie.domain} (Secure=true, SameSite=Lax)`);
-      }
-      isHardening = false;
+    return new Promise((resolve) => {
+      chrome.cookies.set(setDetails, () => {
+        if (chrome.runtime.lastError) {
+          console.error("Failed to harden cookie:", chrome.runtime.lastError.message);
+        } else {
+          console.log(`Hardened cookie: ${cookie.name} on ${cookie.domain} (Secure=true, SameSite=Lax)`);
+        }
+        isHardening = false;
+        resolve();
+      });
     });
   }
 }
